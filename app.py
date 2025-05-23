@@ -311,6 +311,12 @@ def main(page: ft.Page):
                                         on_click=lambda _: page.go('/cadastrar_livro'),
 
                                     ),
+                                    ft.Button(
+                                        text='Exibir Livros',
+                                        bgcolor=Colors.BLUE_ACCENT,
+                                        color=Colors.BLACK,
+                                        on_click=lambda _: page.go('/exibir_livros'),
+                                    )
                                 ],
 
                             ),
@@ -371,7 +377,7 @@ def main(page: ft.Page):
                     )
                 )
 
-            if page.route == '/exibir_detalhes_livros':
+            if page.route == '/exibir_detalhes_livro':
                 page.views.append(
                     View(
                         'exibir_detalhes_livros',
@@ -411,6 +417,12 @@ def main(page: ft.Page):
                                             on_click=lambda _: page.go('/cadastar_usuarios'),
 
                                         ),
+                                        ft.Button(
+                                            text='Exibir Usuarios',
+                                            bgcolor=Colors.BLUE_ACCENT,
+                                            color=Colors.BLACK,
+                                            on_click=lambda _: page.go('/exibir_usuarios'),
+                                        )
                                     ],
 
                                 ),
@@ -508,6 +520,12 @@ def main(page: ft.Page):
                                             on_click=lambda _: page.go('/cadastrar_emprestimos'),
 
                                         ),
+                                        ft.Button(
+                                            text='Exibir Emprestimos',
+                                            bgcolor=Colors.BLUE_ACCENT,
+                                            color=Colors.BLACK,
+                                            on_click=lambda _: page.go('/exibir_emprestimos'),
+                                        )
                                     ],
 
                                 ),

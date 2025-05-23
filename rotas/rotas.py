@@ -87,3 +87,24 @@ def cadastrar_emprestimo_post(novo_emprestimo):
               f'ISBN: {dados_post_emprestimo["usuario_emprestado_id"]}')
     else:
         print(f'Erro: {response.status_code}')
+
+
+def editar_usuario(novo_post_editar_usuario):
+    url = f'http://10.135.232.9:5000/editar_usuario/{id}'
+
+    antes = requests.get(url)
+    response = requests.put(url, json=novo_post_editar_usuario)
+    if response.status_code == 201:
+        if antes.status_code == 201:
+            dados_antes = antes.json()
+            print(f'Nome antigo: {dados_antes["nome"]}\n'
+                  f'Cpf antigo: {dados_antes["cpf"]}\n'
+                  f'Endereço: {dados_antes["endereco"]}\n')
+        else:
+            print(f'Erro: {response.status_code}') # Ver se o antes deu certo
+        dados = response.json()
+        print(f'Nome: {dados["nome"]}\n'
+              f'Cpf: {dados["endereco"]}\n'
+              f'Endereço: {dados['endereco']}')
+    else:
+        print(f'Erro: {response.status_code}')
