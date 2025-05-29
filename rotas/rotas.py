@@ -104,7 +104,7 @@ def editar_usuario(novo_post_editar_usuario):
             print(f'Erro: {response.status_code}') # Ver se o antes deu certo
         dados = response.json()
         print(f'Nome: {dados["nome"]}\n'
-              f'Cpf: {dados["endereco"]}\n'
-              f'Endereço: {dados['endereco']}')
+              f'Cpf: {dados["cpf"]}\n'
+              f'Endereço: {dados["endereco"]}')
     else:
         print(f'Erro: {response.status_code}')
