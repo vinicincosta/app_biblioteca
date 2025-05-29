@@ -198,10 +198,12 @@ def main(page: ft.Page):
             lv_livros.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                    title=ft.Text(f'Título - {livro["titulo"]}', color=Colors.BLACK),
-                    subtitle=ft.Text(f'ISBN - {livro["ISBN"]}', color=Colors.BLACK),
+                    title=ft.Text(f'Título - {livro["titulo"]}', color=Colors.WHITE),
+                    subtitle=ft.Text(f'ISBN - {livro["ISBN"]}', color=Colors.WHITE),
+                    bgcolor=Colors.BLUE_900,
                     trailing=ft.PopupMenuButton(
                         icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
+                        bgcolor=Colors.BLUE_700,
                         items=[
                             ft.PopupMenuItem(text='Detalhes',
                                              on_click=lambda _, l=livro: exibir_detalhes_livro(l)),
@@ -214,10 +216,8 @@ def main(page: ft.Page):
             )
 
     def buscar_livro_id(e):
-        resultado_get = ()
+        resultado_get = ( )
         print(f'Resultado: {resultado_get}')
-
-
 
     def add_usuario_lista(e):
         lv_livros.controls.clear()
@@ -229,9 +229,11 @@ def main(page: ft.Page):
             lv_usuarios.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                    title=ft.Text(f'Nome - {usuario['nome']}', color=Colors.BLACK),
-                    subtitle=ft.Text(f'cpf - {usuario["cpf"]}', color=Colors.BLACK),
+                    title=ft.Text(f'Nome - {usuario['nome']}', color=Colors.WHITE),
+                    subtitle=ft.Text(f'cpf - {usuario["cpf"]}', color=Colors.WHITE),
+                    bgcolor=Colors.BLUE_900,
                     trailing=ft.PopupMenuButton(
+                        bgcolor=Colors.BLUE_700,
                         icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
                         items=[
                             ft.PopupMenuItem(text=f'Detalhes',
@@ -254,8 +256,10 @@ def main(page: ft.Page):
             lv_emprestimos.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                    title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.BLACK),
+                    title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.WHITE),
+                    bgcolor=Colors.BLUE_900,
                     trailing=ft.PopupMenuButton(
+                        bgcolor=Colors.BLUE_700,
                         icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
                         items=[
                             ft.PopupMenuItem(text=f'Detalhes',
@@ -360,6 +364,8 @@ def main(page: ft.Page):
             page.overlay.append(msg_error)
             msg_error.open = True
             page.update()
+
+
         else:
             novo_emprestimo = {
                 'data_de_emprestimo': input_data_emprestimo.value,
@@ -368,6 +374,7 @@ def main(page: ft.Page):
                 'usuario_emprestado_id': input_usuario_emprestado_id.value,
 
             }
+
             cadastrar_emprestimo_post(novo_emprestimo)
             input_livro_emprestimo_id.value = ''
             input_data_devoulucao.value = ''
@@ -505,8 +512,6 @@ def main(page: ft.Page):
 
 
             if page.route == '/cadastrar_livro':
-
-
                 page.views.append(
                     View(
                         "/cadastrar_livro",
@@ -584,7 +589,9 @@ def main(page: ft.Page):
                                 on_click=lambda _: editar_livro(e),
                             ),
 
-                        ]
+
+                        ],
+                        bgcolor=Colors.BLUE_900
                     )
                 )
 
@@ -708,7 +715,8 @@ def main(page: ft.Page):
                                  color=Colors.BLACK,
                                  on_click=lambda _: editar_usuario(e),
                              ),
-                         ]
+                         ],
+                         bgcolor=Colors.BLUE_900
                     )
                 )
 
@@ -803,7 +811,7 @@ def main(page: ft.Page):
                                    center_title=True),
                             lv_emprestimos,
                         ],
-                        bgcolor=Colors.BLUE_200,
+                        bgcolor=Colors.BLUE_900,
                     )
                 )
 
@@ -837,6 +845,7 @@ def main(page: ft.Page):
     imagem = ft.Image(
         src='biblioteca.jpg',
         width=300,
+
         fit=ft.ImageFit.CONTAIN,
         border_radius=10,  # Bordas arredondadas
     )
@@ -859,7 +868,7 @@ def main(page: ft.Page):
     input_titulo = ft.TextField(label='Titulo', hint_text='insira titulo', col=4, hover_color=Colors.BLUE)
     input_resumo = ft.TextField(label='Resumo', hint_text='insira o resumo', col=4, hover_color=Colors.BLUE)
     input_ISBN = ft.TextField(label='ISBN', hint_text='insira o ISBN', col=4, hover_color=Colors.BLUE)
-    input_autor = ft.TextField(label='Autor', hint_text='insira autor', col=4, hover_color=Colors.BLUE)
+    input_autor = ft.TextField(label='Autor', hint_text='insira autor', col=4, hover_color=Colors.BLUE, )
 
     lv_livros = ft.ListView(
         height=700,
@@ -896,6 +905,31 @@ def main(page: ft.Page):
 
     txt_resultado_emprestimo = ft.Text('', font_family="Consolas", size=22, color=Colors.BLACK)
 
+    dlg = ft.AlertDialog(
+        title=ft.Text("Hello"),
+        content=ft.Text("You are notified!"),
+        alignment=ft.alignment.center,
+        on_dismiss=lambda e: print("Dialog dismissed!"),
+        title_padding=ft.padding.all(25),
+    )
+
+    dlg_modal = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Você confirma"),
+        content=ft.Text("Você realmente confirma esse envio"),
+        actions=[
+            ft.TextButton("Sim", on_click=lambda e: page.close(dlg_modal)),
+            ft.TextButton("Não", on_click=lambda e: page.close(dlg_modal)),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: print("Modal dialog dismissed!"),
+    )
+
+    page.add(
+        ft.ElevatedButton("Open dialog", on_click=lambda e: page.open(dlg)),
+        ft.ElevatedButton("Open modal dialog", on_click=lambda e: page.open(dlg_modal)),
+    )
+
     # Eventos
     def voltar(e):
         page.views.pop()
@@ -905,7 +939,6 @@ def main(page: ft.Page):
 
     page.on_route_change = gerencia_rotas
     page.on_view_pop = voltar
-    page.on_route_change = gerencia_rotas
     page.go(page.route)
 
 # Comando que executa o aplicativo

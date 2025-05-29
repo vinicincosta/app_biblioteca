@@ -46,7 +46,7 @@ def get_usuario(id):
         print(dados_get_postagem)
     else:
         print(f'Erro: {response.status_code}')
-# get_usuario(17)
+get_usuario(10)
 
 
 def get_livro(id):
