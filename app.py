@@ -5,6 +5,7 @@ import requests
 from flet.core.dropdown import Option
 from flet.core.elevated_button import ElevatedButton
 from rotas import *
+from datetime import datetime
 
 id_usuario_global = 0
 id_livro_global = 0
@@ -17,20 +18,6 @@ def main(page: ft.Page):
     page.window.width = 375
     page.window.height = 667
 
-    # page.navigation_bar = ft.NavigationBar(
-    #     destinations=[
-    #         ft.NavigationBarDestination(icon=ft.Icons.EXPLORE, label="Regras"),
-    #         ft.NavigationBarDestination(icon=ft.Icons.REPORT, label="Simulação"),
-    #         ft.NavigationBarDestination(
-    #             icon=ft.Icons.ACCOUNT_BOX,
-    #             selected_icon=ft.Icons.BOOKMARK,
-    #             label="Explorer",
-    #
-    #         ),
-    #
-    #     ],
-    #     bgcolor=Colors.BLUE_200,
-    # )
 
     pagelet = ft.Pagelet(
         navigation_bar=ft.NavigationBar(
@@ -54,7 +41,7 @@ def main(page: ft.Page):
 
     # Funções
     def cadastrar_livro_post(novo_livro):
-        url = f'http://10.135.232.9:5000/novo_livro'
+        url = f'http://10.135.232.11:5000/novo_livro'
 
         response = requests.post(url, json=novo_livro)
         print(response.json())
@@ -69,7 +56,7 @@ def main(page: ft.Page):
             print(f'Erro: {response.status_code}')
 
     def cadastrar_usuario_post(novo_usuario):
-        url = "http://10.135.232.9:5000/novo_usuario"
+        url = "http://10.135.232.11:5000/novo_usuario"
 
         response = requests.post(url, json=novo_usuario)
         print(response.json())
@@ -82,23 +69,23 @@ def main(page: ft.Page):
         else:
             print(f'Erro: {response.status_code}')
 
-    def cadastrar_emprestimo_post(novo_emprestimo):
-        url = f'http://10.135.232.9:5000/novo_emprestimo'
-        response = requests.post(url, json=novo_emprestimo)
-        if response.status_code == 201:
-            dados_post_emprestimo = response.json()
-
-            print(f'Titulo: {dados_post_emprestimo["data_de_devolucao"]}\n'
-                  f'Autor: {dados_post_emprestimo["data_de_emprestimo"]}\n'
-                  f'Resumo: {dados_post_emprestimo["livro_emprestado_id"]}\n'
-                  f'ISBN: {dados_post_emprestimo["usuario_emprestado_id"]}')
-            return dados_post_emprestimo
-        else:
-            print(f'Erro: {response.json()}')
-            return {'error': response.json()}
+    # def cadastrar_emprestimo_post(novo_emprestimo):
+    #     url = f'http://10.135.232.9:5000/novo_emprestimo'
+    #     response = requests.post(url, json=novo_emprestimo)
+    #     if response.status_code == 201:
+    #         dados_post_emprestimo = response.json()
+    #
+    #         print(f'Titulo: {dados_post_emprestimo["data_de_devolucao"]}\n'
+    #               f'Autor: {dados_post_emprestimo["data_de_emprestimo"]}\n'
+    #               f'Resumo: {dados_post_emprestimo["livro_emprestado_id"]}\n'
+    #               f'ISBN: {dados_post_emprestimo["usuario_emprestado_id"]}')
+    #         return dados_post_emprestimo
+    #     else:
+    #         print(f'Erro: {response.json()}')
+    #         return {'error': response.json()}
 
     def listar_livro():
-        url = f'http://10.135.232.9:5000/livro'
+        url = f'http://10.135.232.11:5000/livro'
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -110,7 +97,7 @@ def main(page: ft.Page):
             return response.json()
 
     def listar_usuario():
-        url = f'http://10.135.232.9:5000/usuario'
+        url = f'http://10.135.232.11:5000/usuario'
         response = requests.get(url)
         if response.status_code == 200:
             dados_get_usuario = response.json()
@@ -121,7 +108,7 @@ def main(page: ft.Page):
             return response.json()
 
     def listar_emprestimos():
-        url = f'http://10.135.232.9:5000/emprestimo'
+        url = f'http://10.135.232.11:5000/emprestimo'
         response = requests.get(url)
         if response.status_code == 200:
             dados_get_emprestimos = response.json()
@@ -131,7 +118,7 @@ def main(page: ft.Page):
             print(f'Erro: {response.status_code}')
 
     def editar_usuario_rota(id, novo_post_editar_usuario):
-        url = f'http://10.135.232.9:5000/editar_usuario/{id}'
+        url = f'http://10.135.232.11:5000/editar_usuario/{id}'
 
         response = requests.put(url, json=novo_post_editar_usuario)
         if response.status_code == 200:
@@ -148,7 +135,7 @@ def main(page: ft.Page):
             return response.json()
 
     def editar_livro_rota(id, novo_post_editar_livro):
-        url = f'http://10.135.232.9:5000/editar_livro/{id}'
+        url = f'http://10.135.232.11:5000/editar_livro/{id}'
 
         response = requests.put(url, json=novo_post_editar_livro)
         if response.status_code == 200:
@@ -166,7 +153,7 @@ def main(page: ft.Page):
             return response.json()
 
     def get_livro(id):
-        url = f'http://10.135.232.9:5000/get_livro/{id}'
+        url = f'http://10.135.232.11:5000/get_livro/{id}'
         response = requests.get(url)
         if response.status_code == 200:
             dados_get_postagem = response.json()
@@ -177,7 +164,7 @@ def main(page: ft.Page):
             return response.json()
 
     def get_usuario(id):
-        url = f'http://10.135.232.9:5000/get_usuario/{id}'
+        url = f'http://10.135.232.11:5000/get_usuario/{id}'
         response = requests.get(url)
         if response.status_code == 200:
             dados_get_postagem = response.json()
@@ -186,6 +173,63 @@ def main(page: ft.Page):
         else:
             print(f'Erro: {response.status_code}')
             return response.json()
+
+    def get_data_devolucao(e):
+        prazo = input_data_devoulucao.value
+        data_devolucao = input_data_emprestimo.value
+        url = f'http://10.135.232.11:5000/calcular_devolucao/{data_devolucao}+{prazo}'
+
+        response = requests.get(url)
+        if response.status_code == 200:
+            dados_get_postagem = response.json()
+            print(dados_get_postagem)
+            return dados_get_postagem["devolucao"]
+
+        else:
+            print(f'Erro: {response.json()}')
+            return response.json()
+
+
+     # TESTE EMPRÉSTIMO DATE
+    # def listar_emprestimos():
+    #     url = f'http://10.135.232.11:5000/emprestimo'
+    #     response = requests.get(url)
+    #
+    #     if response.status_code == 200:
+    #         dados_get_emprestimos = response.json()
+    #         print("Resposta da API:", dados_get_emprestimos)
+    #
+    #         if 'lista_emprestimo' in dados_get_emprestimos:
+    #             for emprestimo in dados_get_emprestimos['lista_emprestimo']:
+    #                 # Converter a data de devolução para datetime usando o formato correto
+    #                 data_de_devolucao = datetime.strptime(emprestimo['data_de_devolucao'], '%d/%m/%Y')  # Ajuste aqui
+    #                 # Determinar o status do empréstimo
+    #                 if data_de_devolucao > datetime.now():
+    #                     status = "Ativo"
+    #                 else:
+    #                     status = "Devolvido"
+    #             return dados_get_emprestimos['lista_emprestimo']
+    #         else:
+    #             print("Erro: 'lista_emprestimo' não encontrada na resposta da API.")
+    #             return []
+    #     else:
+    #         print(f'Erro: {response.status_code}')
+    #         return []
+
+
+
+
+    def cadastrar_emprestimo_post(novo_emprestimo):
+        url = f'http://10.135.232.11:5000/novo_emprestimo'
+        response = requests.post(url, json=novo_emprestimo)
+        if response.status_code == 201:
+            dados_post_emprestimo = response.json()
+
+            print(f'Data de Empréstimo: {dados_post_emprestimo}')
+            return dados_post_emprestimo
+        else:
+            print(f'Erro: {response.json()}')
+            return {'error': response.json()}
 
     # //////////////////////////////////////////////////////////////////////////////////////////////
     def add_titulo_lista(e):
@@ -349,14 +393,20 @@ def main(page: ft.Page):
 
     def add_emprestimo_lista(e):
         lv_emprestimos.controls.clear()
+
         resultado_emprestimo = listar_emprestimos()
-        print(f'Resltuado: {resultado_emprestimo}')
+        print(f'Resultado: {resultado_emprestimo}')
+
+        # lv_livros.controls.clear()
+        # resultado_usuario = listar_usuario()
+        # print(f'Resltuado: {resultado_usuario}')
 
         for emprestimo in resultado_emprestimo:
             lv_emprestimos.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
                     title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.WHITE),
+                    subtitle=ft.Text(f'Status: {emprestimo["status"]}', color=Colors.WHITE),  # Exibe o status
                     bgcolor=Colors.BLUE_900,
                     trailing=ft.PopupMenuButton(
                         bgcolor=Colors.BLUE_700,
@@ -369,18 +419,45 @@ def main(page: ft.Page):
                 )
             )
 
-    def exibir_detalhes_emprestimos(emprestimo):
-        usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
-        livro_emprestimo = get_livro(emprestimo["livro_emprestado_id"])
+    # def add_emprestimo_lista(e):
+    #     lv_emprestimos.controls.clear()
+    #     resultado_emprestimo = listar_emprestimos()
+    #     print(f'Resltuado: {resultado_emprestimo}')
+    #
+    #     for emprestimo in resultado_emprestimo:
+    #         lv_emprestimos.controls.append(
+    #             ft.ListTile(
+    #                 leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
+    #                 title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.WHITE),
+    #                 bgcolor=Colors.BLUE_900,
+    #                 trailing=ft.PopupMenuButton(
+    #                     bgcolor=Colors.BLUE_700,
+    #                     icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
+    #                     items=[
+    #                         ft.PopupMenuItem(text=f'Detalhes',
+    #                                          on_click=lambda _, m=emprestimo: exibir_detalhes_emprestimos(m))
+    #                     ]
+    #                 )
+    #             )
+    #         )
+    #
+    # def exibir_detalhes_emprestimos(emprestimo):
+    #     usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
+    #     livro_emprestimo = get_livro(emprestimo["livro_emprestado_id"])
+    #
+    #     txt_resultado_emprestimo.value = (f'Data de devolução - {emprestimo["data_de_devolucao"]}\n'
+    #                                       f''
+    #                                       f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}\n'
+    #                                       f''
+    #                                       f'Usuário empréstimo - {usuario_emprestimo["nome"]}\n'
+    #                                       f''
+    #                                       f'Livro empréstimo - {livro_emprestimo['Titulo']}\n')
+    #     page.go("/exibir_detalhes_emprestimos")
 
-        txt_resultado_emprestimo.value = (f'Data de devolução - {emprestimo["data_de_devolucao"]}\n'
-                                          f''
-                                          f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}\n'
-                                          f''
-                                          f'Usuário empréstimo - {usuario_emprestimo["nome"]}\n'
-                                          f''
-                                          f'Livro empréstimo - {livro_emprestimo['Titulo']}\n')
-        page.go("/exibir_detalhes_emprestimos")
+
+
+    # def calcular_status_livro(e):
+
 
     def exibir_detalhes_usuarios(usuario):
         txt_resultado_usuarios.value = (f'Nome - {usuario['nome']}\n'
@@ -471,20 +548,22 @@ def main(page: ft.Page):
             msg_error.open = True
             page.update()
         else:
+            print('aaaaaaaaaaaaaaaa')
+            data_calculada = get_data_devolucao(e)
             novo_emprestimo = {
+
                 'data_de_emprestimo': input_data_emprestimo.value,
-                'data_de_devolucao': input_data_devoulucao.value,
+                'data_de_devolucao': data_calculada,
                 'livro_emprestado_id': input_get_livro_emprestimo.value,
                 'usuario_emprestado_id': input_get_usuario_emprestimo.value,
             }
-
-            print("menu ", input_get_livro_emprestimo)
-
+            print(novo_emprestimo)
             resposta_emprestimo = cadastrar_emprestimo_post(novo_emprestimo)
 
             if 'error' in resposta_emprestimo:
                 msg_error.open = True
             else:
+                dlg_modal.open = False
                 input_data_emprestimo.value = ''
                 input_data_devoulucao.value = ''
                 input_get_usuario_emprestimo.value = ''
@@ -492,6 +571,18 @@ def main(page: ft.Page):
                 page.overlay.append(msg_sucesso)  # overlay sob escreve a página
                 msg_sucesso.open = True
             page.update()
+
+    def exibir_detalhes_emprestimos(emprestimo):
+        usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
+        livro_emprestimo = get_livro(emprestimo["livro_emprestado_id"])
+
+        txt_resultado_emprestimo.value = (f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}\n'
+                                          f'Data de devolução - {emprestimo["data_de_devolucao"]}\n'
+                                          f'Usuário empréstimo - {usuario_emprestimo["nome"]}\n'
+                                          f'Livro empréstimo - {livro_emprestimo["Titulo"]}\n'
+                                          f'Status: {emprestimo['status']}')
+        page.go("/exibir_detalhes_emprestimos")
+
 
     def editar_usuario(e):
         # try:
@@ -560,6 +651,23 @@ def main(page: ft.Page):
                 page.overlay.append(msg_sucesso)
                 msg_sucesso.open = True
             page.update()
+
+    dlg_modal = ft.AlertDialog(
+        title=ft.Text("ALERTA‼️"),
+        content=ft.Text("Você realmente confirma esse cadastro, após cadastrado não terá como editar",
+                        color=Colors.WHITE, font_family='Arial', size=18),
+        actions=[
+            ft.TextButton("SIM", on_click=salvar_emprestimos),
+            ft.TextButton("NÃO", on_click=lambda e: fechar_dialogo(e)),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+        on_dismiss=lambda e: print("Modal dialog dismissed!"),
+        bgcolor=Colors.BLUE_700,
+    )
+
+    def fechar_dialogo(e):
+        dlg_modal.open = False
+        page.update()
 
         # except Exception as exc:
         #     page.overlay.append(msg_error)
@@ -877,7 +985,6 @@ def main(page: ft.Page):
                                         bgcolor=Colors.BLUE_ACCENT,
                                         color=Colors.BLACK,
                                         on_click=lambda _: page.go('/cadastrar_emprestimos'),
-
                                     ),
                                     ft.Button(
                                         width=200,
@@ -912,12 +1019,9 @@ def main(page: ft.Page):
                         input_get_livro_emprestimo,
                         input_get_usuario_emprestimo,
 
-                        ft.Button(
-                            text="Salvar",
-                            bgcolor=Colors.BLUE_ACCENT,
-                            color=Colors.BLACK,
-                            on_click=lambda _: salvar_emprestimos(e),
-                        ),
+
+
+                        ft.ElevatedButton("Salvar", on_click=lambda e: page.open(dlg_modal)),
 
                         # ft.ElevatedButton("Você realmente quer enviar esse cadastro?", on_click=lambda e: page.open(dlg_modal)),
 
@@ -1024,14 +1128,14 @@ def main(page: ft.Page):
     txt_resultado_usuarios = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
 
     # EMPRÉSTIMOS
-    input_data_devoulucao = ft.TextField(label='Data de devolução', hint_text='insira a data de devoulucao', col=4,
+    input_data_devoulucao = ft.TextField(label='Prazo de devolução', hint_text='insira a data de devoulucao', col=4,
                                          hover_color=Colors.BLUE)
     input_data_emprestimo = ft.TextField(label='Data de empréstimo', hint_text='insira a data de empréstimo', col=4,
                                          hover_color=Colors.BLUE)
 
     lv_emprestimos = ft.ListView(
-        height=700,
-        spacing=5,
+        height=400,
+        spacing=2,
         divider_thickness=2
     )
 
@@ -1080,55 +1184,3 @@ def main(page: ft.Page):
 # Comando que executa o aplicativo
 # Deve estar sempre colado na linha
 ft.app(main)
-
-# def salvar_emprestimos(e):
-#     Dicionario livro
-#     lv_livros.controls.clear()
-#     resultado_lista = listar_livro()
-#     print(f'Resultado: {resultado_lista}')
-#
-#     if (input_data_emprestimo.value == '' or input_data_devoulucao.value == ''
-#             or input_get_usuario_emprestimo.value == '' or input_get_livro_emprestimo == ''):
-#         page.overlay.append(msg_error)
-#         msg_error.open = True
-#         page.update()
-#         return
-#
-#
-#
-#     Função de confirmação dentro do escopo principal
-#     def confirmar_salvar(e):
-#         novo_emprestimo = {
-#             'data_de_emprestimo': input_data_emprestimo.value,
-#             'data_de_devolucao': input_data_devoulucao.value,
-#             'livro_emprestado_id': input_get_livro_emprestimo.value,
-#             'usuario_emprestado_id': input_get_usuario_emprestimo.value,
-#         }
-#         cadastrar_emprestimo_post(novo_emprestimo)
-#         input_data_emprestimo.value = ''
-#         input_data_devoulucao.value = ''
-#         input_get_usuario_emprestimo.value = ''
-#         input_get_livro_emprestimo.value = ''
-#         dlg_modal.open = False
-#         page.overlay.append(msg_sucesso)
-#         msg_sucesso.open = True
-#         page.update()
-#
-#     def cancelar(e):
-#         dlg_modal.open = False
-#         page.update()
-#
-#     dlg_modal = ft.AlertDialog(
-#         modal=True,
-#         title=ft.Text("Confirmação"),
-#         content=ft.Text("Deseja mesmo salvar esse cadastro? Pois depois de salvo não tem como mais editar."),
-#         actions=[
-#             ft.TextButton("Confirmar", on_click=lambda _: confirmar_salvar(e)),
-#             ft.TextButton("Cancelar", on_click=lambda _: cancelar(e)),
-#         ],
-#         actions_alignment=ft.MainAxisAlignment.END,
-#         on_dismiss=lambda e: print("Diálogo fechado sem confirmação."),
-#     )
-#     page.dialog = dlg_modal
-#     dlg_modal.open = True
-#     page.update()

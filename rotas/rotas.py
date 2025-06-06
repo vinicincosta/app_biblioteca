@@ -29,14 +29,14 @@ def listar_usuario():
 
 
 def listar_emprestimos():
-    url = f'http://10.135.232.9:5000/emprestimo'
+    url = f'http://10.135.232.11:5000/emprestimo'
     response = requests.get(url)
     if response.status_code == 200:
         dados_get_emprestimos = response.json()
         print('hhhh3',dados_get_emprestimos)
     else:
         print(f'Erro: {response.status_code}')
-listar_emprestimos()
+
 
 def get_usuario(id):
     url = f'http://10.135.232.9:5000/get_usuario/{id}'
@@ -46,7 +46,19 @@ def get_usuario(id):
         print(dados_get_postagem)
     else:
         print(f'Erro: {response.status_code}')
-get_usuario(10)
+
+
+
+def listar_emprestimos():
+    url = f'http://10.135.232.11:5000/emprestimo'
+    response = requests.get(url)
+    if response.status_code == 200:
+        dados_get_emprestimos = response.json()
+        print(dados_get_emprestimos)
+        return dados_get_emprestimos['lista_emprestimo']
+    else:
+        print(f'Erro: {response.status_code}')
+
 
 
 def get_livro(id):
@@ -108,3 +120,20 @@ def editar_usuario(novo_post_editar_usuario):
               f'Endereço: {dados["endereco"]}')
     else:
         print(f'Erro: {response.status_code}')
+
+def get_data_devolucao(data_devolucao, prazo):
+    # prazo = input_data_devoulucao.value
+    # data_devolucao = input_data_emprestimo.value
+    url = f'http://10.135.232.11:5000/calcular_devolucao/{data_devolucao}+{prazo}'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        dados_get_postagem = response.json()
+        print(dados_get_postagem)
+        return dados_get_postagem["devolucao"]
+
+    else:
+        print(f'Erro: {response.json()}')
+        return response.json()
+
+get_data_devolucao("06-06-2025","10")
