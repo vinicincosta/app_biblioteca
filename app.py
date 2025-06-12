@@ -4,11 +4,14 @@ from flet.core.colors import Colors
 import requests
 from flet.core.dropdown import Option
 from flet.core.elevated_button import ElevatedButton
+from flet.core.types import CrossAxisAlignment
+
 from rotas import *
 from datetime import datetime
 
 id_usuario_global = 0
 id_livro_global = 0
+id_emprestimo_global = 0
 
 
 def main(page: ft.Page):
@@ -17,7 +20,6 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT  # ou ft.ThemeMode.DARK
     page.window.width = 375
     page.window.height = 667
-
 
     pagelet = ft.Pagelet(
         navigation_bar=ft.NavigationBar(
@@ -68,21 +70,6 @@ def main(page: ft.Page):
                   f'Endereço: {dados_post_usuario["endereco"]}')
         else:
             print(f'Erro: {response.status_code}')
-
-    # def cadastrar_emprestimo_post(novo_emprestimo):
-    #     url = f'http://10.135.232.9:5000/novo_emprestimo'
-    #     response = requests.post(url, json=novo_emprestimo)
-    #     if response.status_code == 201:
-    #         dados_post_emprestimo = response.json()
-    #
-    #         print(f'Titulo: {dados_post_emprestimo["data_de_devolucao"]}\n'
-    #               f'Autor: {dados_post_emprestimo["data_de_emprestimo"]}\n'
-    #               f'Resumo: {dados_post_emprestimo["livro_emprestado_id"]}\n'
-    #               f'ISBN: {dados_post_emprestimo["usuario_emprestado_id"]}')
-    #         return dados_post_emprestimo
-    #     else:
-    #         print(f'Erro: {response.json()}')
-    #         return {'error': response.json()}
 
     def listar_livro():
         url = f'http://10.135.232.11:5000/livro'
@@ -152,6 +139,25 @@ def main(page: ft.Page):
             print(f'Erro: {response.json()}')
             return response.json()
 
+    def editar_status_emprestimo_rota(id):
+        url = f'http://10.135.232.11:5000/editar_emprestimo/{id}'
+
+        dados_atualizados = {
+            'status': 'Devolvido',
+        }
+
+        response = requests.put(url, json=dados_atualizados)
+        if response.status_code == 200:
+
+            dados = response.json()
+            print(f'status {dados}')
+
+            return dados
+        else:
+            print(f'Erro: {response.status_code}')
+            print(f'Erro: {response.json()}')
+            return response.json()
+
     def get_livro(id):
         url = f'http://10.135.232.11:5000/get_livro/{id}'
         response = requests.get(url)
@@ -189,36 +195,6 @@ def main(page: ft.Page):
             print(f'Erro: {response.json()}')
             return response.json()
 
-
-     # TESTE EMPRÉSTIMO DATE
-    # def listar_emprestimos():
-    #     url = f'http://10.135.232.11:5000/emprestimo'
-    #     response = requests.get(url)
-    #
-    #     if response.status_code == 200:
-    #         dados_get_emprestimos = response.json()
-    #         print("Resposta da API:", dados_get_emprestimos)
-    #
-    #         if 'lista_emprestimo' in dados_get_emprestimos:
-    #             for emprestimo in dados_get_emprestimos['lista_emprestimo']:
-    #                 # Converter a data de devolução para datetime usando o formato correto
-    #                 data_de_devolucao = datetime.strptime(emprestimo['data_de_devolucao'], '%d/%m/%Y')  # Ajuste aqui
-    #                 # Determinar o status do empréstimo
-    #                 if data_de_devolucao > datetime.now():
-    #                     status = "Ativo"
-    #                 else:
-    #                     status = "Devolvido"
-    #             return dados_get_emprestimos['lista_emprestimo']
-    #         else:
-    #             print("Erro: 'lista_emprestimo' não encontrada na resposta da API.")
-    #             return []
-    #     else:
-    #         print(f'Erro: {response.status_code}')
-    #         return []
-
-
-
-
     def cadastrar_emprestimo_post(novo_emprestimo):
         url = f'http://10.135.232.11:5000/novo_emprestimo'
         response = requests.post(url, json=novo_emprestimo)
@@ -233,20 +209,42 @@ def main(page: ft.Page):
 
     # //////////////////////////////////////////////////////////////////////////////////////////////
     def add_titulo_lista(e):
+        progress.visible = True
         lv_livros.controls.clear()
         resultado_lista = listar_livro()
+        resultado_emprestimo = listar_emprestimos()
         print(f'Resultado: {resultado_lista}')
 
+        # Criar lista vazia []
+        livros_emprestados_ids = []
+        # Cria um conjunto de IDs de livros emprestados
+        for emprestimo in resultado_emprestimo:
+            if emprestimo['status'] != 'Devolvido':
+                livros_emprestados_ids.append(emprestimo['livro_emprestado_id'])
+
+        progress.visible = False
         # Lista de todos os livros
         for livro in resultado_lista:
+            livro_id = livro["id_livro"]
+            titulo_livro = livro["titulo"]
+            isbn_livro = livro["ISBN"]
+
+            # Verifica se o livro está emprestado
+            if livro_id in livros_emprestados_ids:
+                bgcolor = Colors.RED_500
+                subtitle_text = f'EMPRESTADO'
+
+            else:
+                bgcolor = Colors.BLUE_900
+                subtitle_text = f'ISBN - {isbn_livro}'
+
             lv_livros.controls.append(
                 ft.ListTile(
                     leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                    title=ft.Text(f'Título - {livro["titulo"]}', color=Colors.WHITE),
-                    subtitle=ft.Text(f'ISBN - {livro["ISBN"]}', color=Colors.WHITE),
-                    bgcolor=Colors.BLUE_900,
+                    title=ft.Text(f'Título - {titulo_livro}', color=Colors.WHITE),
+                    subtitle=ft.Text(subtitle_text, color=Colors.WHITE),
+                    bgcolor=bgcolor,
                     expand=True,
-
                     trailing=ft.PopupMenuButton(
                         icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
                         bgcolor=Colors.BLUE_700,
@@ -255,36 +253,96 @@ def main(page: ft.Page):
                                              on_click=lambda _, l=livro: exibir_detalhes_livro(l)),
                             ft.PopupMenuItem(text='Editar',
                                              on_click=lambda _, l=livro: editar_pagina_livro(e, l)),
+
                         ],
                     )
                 )
             )
-            page.update()
+        page.update()
+
+    def add_livros_devolvidos(e):
+        progress.visible = True
+        lv_emprestimos_devolvidos.controls.clear()
+        resultado_lista_devolvidos = listar_emprestimos()
+        print(f'Resultado: {resultado_lista_devolvidos}')
+
+        usuarios_por_id = {usuario["id_usuario"]: usuario["nome"] for usuario in resultado_usuario}
+        livros_por_id = {livro["id_livro"]: livro["titulo"] for livro in resultado_lista}
+
+        for emprestimo in resultado_emprestimo:
+            titulo_livro = livros_por_id.get(emprestimo["livro_emprestado_id"], "Livro desconhecido")
+            nome_usuario = usuarios_por_id.get(emprestimo["usuario_emprestado_id"], "Usuário desconhecido")
+
+            print('aaaaaaaaa'),
+
+            if emprestimo['status'] == 'Devolvido':
+                lv_emprestimos_devolvidos.controls.append(
+                    ft.ListTile(
+                        leading=ft.Icon(ft.Icons.ACCOUNT_BOX, color=Colors.BLACK),
+                        title=ft.Text(f'Nome - {titulo_livro}', color=Colors.WHITE),
+                        subtitle=ft.Text(f'cpf - {nome_usuario}', color=Colors.WHITE),
+                        bgcolor=Colors.GREEN,
+                        expand=True,
+                        trailing=ft.PopupMenuButton(
+                            bgcolor=Colors.BLUE_700,
+                            icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
+                            items=[
+                                ft.PopupMenuItem(text=f'Detalhes',
+                                                 on_click=lambda _, m=emprestimo: exibir_detalhes_emprestimos(m)),
+
+                                # ft.PopupMenuItem(text=f'Editar',
+                                #                  on_click=lambda _, m=emprestimo: editar_pagina_usuario(e,m)),
+
+                            ],
+                        )
+                    )
+                )
+
+
 
     def buscar_livro_id(e):
         lv_livros.controls.clear()
         resultado_lista = listar_livro()
+        resultado_emprestimo = listar_emprestimos()
         print(f'Resultado: {resultado_lista}')
 
         # Opções ID
-        options = [Option(key=livro['id_livro'], text=livro['id_livro']) for livro in resultado_lista]
+        options = [Option(key=livro['id_livro'], text=str(livro['id_livro'])) for livro in resultado_lista]
 
         def on_change_ID_filtrar(e):
             id_selecionado = input_get_livro.value
             print(f"ID selecionado: {id_selecionado}")
 
             # Filtra o livro pelo ID selecionado
-            livro_filtrado = next((livro for livro in resultado_lista if str(livro['id_livro']) == id_selecionado))
-            # O next é utilizado para encontrar um item especifico, (id)
+            livro_filtrado = next((livro for livro in resultado_lista if str(livro['id_livro']) == id_selecionado),
+                                  None)
+
+            livros_emprestados_ids = []
+            # Cria um conjunto de IDs de livros emprestados
+            for emprestimo in resultado_emprestimo:
+                if emprestimo['status'] != 'Devolvido':
+                    livros_emprestados_ids.append(emprestimo['livro_emprestado_id'])
 
             if livro_filtrado:
                 lv_livros.controls.clear()
+                livro_id = livro_filtrado["id_livro"]
+                titulo_livro = livro_filtrado["titulo"]
+                isbn_livro = livro_filtrado["ISBN"]
+
+                # Verifica se o livro está emprestado
+                if livro_id in livros_emprestados_ids:
+                    bgcolor = Colors.RED_500
+                    subtitle_text = 'EMPRESTADO'
+                else:
+                    bgcolor = Colors.BLUE_900
+                    subtitle_text = f'ISBN - {isbn_livro}'
+
                 lv_livros.controls.append(
                     ft.ListTile(
                         leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                        title=ft.Text(f'Título - {livro_filtrado["titulo"]}', color=Colors.WHITE),
-                        subtitle=ft.Text(f'ISBN - {livro_filtrado["ISBN"]}', color=Colors.WHITE),
-                        bgcolor=Colors.BLUE_900,
+                        title=ft.Text(f'Título - {titulo_livro}', color=Colors.WHITE),
+                        subtitle=ft.Text(subtitle_text, color=Colors.WHITE),
+                        bgcolor=bgcolor,
                         trailing=ft.PopupMenuButton(
                             icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
                             bgcolor=Colors.BLUE_700,
@@ -303,13 +361,13 @@ def main(page: ft.Page):
         input_get_livro = ft.Dropdown(
             bgcolor=Colors.BLUE_300,
             width=page.window.width,
-            fill_color=Colors.RED,
             options=options,
             label='Buscar por ID',
             on_change=on_change_ID_filtrar
         )
         lv_livros.controls.append(input_get_livro)
         page.update()
+
 
     def add_usuario_lista(e):
         lv_livros.controls.clear()
@@ -320,7 +378,7 @@ def main(page: ft.Page):
             # lv_usuarios.dados_postagem = usuario
             lv_usuarios.controls.append(
                 ft.ListTile(
-                    leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
+                    leading=ft.Icon(ft.Icons.ACCOUNT_BOX, color=Colors.BLACK),
                     title=ft.Text(f'Nome - {usuario['nome']}', color=Colors.WHITE),
                     subtitle=ft.Text(f'cpf - {usuario["cpf"]}', color=Colors.WHITE),
                     bgcolor=Colors.BLUE_900,
@@ -339,6 +397,7 @@ def main(page: ft.Page):
                     )
                 )
             )
+
 
     def buscar_usuario_id(e):
         lv_usuarios.controls.clear()
@@ -391,72 +450,45 @@ def main(page: ft.Page):
         lv_usuarios.controls.append(input_get_usuario)
         page.update()
 
+
     def add_emprestimo_lista(e):
         lv_emprestimos.controls.clear()
 
         resultado_emprestimo = listar_emprestimos()
-        print(f'Resultado: {resultado_emprestimo}')
+        resultado_usuario = listar_usuario()
+        resultado_lista = listar_livro()
 
-        # lv_livros.controls.clear()
-        # resultado_usuario = listar_usuario()
-        # print(f'Resltuado: {resultado_usuario}')
+        # Indexa os dados por ID para acesso rápido
+        usuarios_por_id = {usuario["id_usuario"]: usuario["nome"] for usuario in resultado_usuario}
+        livros_por_id = {livro["id_livro"]: livro["titulo"] for livro in resultado_lista}
 
         for emprestimo in resultado_emprestimo:
-            lv_emprestimos.controls.append(
-                ft.ListTile(
-                    leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                    title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.WHITE),
-                    subtitle=ft.Text(f'Status: {emprestimo["status"]}', color=Colors.WHITE),  # Exibe o status
-                    bgcolor=Colors.BLUE_900,
-                    trailing=ft.PopupMenuButton(
-                        bgcolor=Colors.BLUE_700,
-                        icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
-                        items=[
-                            ft.PopupMenuItem(text=f'Detalhes',
-                                             on_click=lambda _, m=emprestimo: exibir_detalhes_emprestimos(m))
-                        ]
+            titulo_livro = livros_por_id.get(emprestimo["livro_emprestado_id"], "Livro desconhecido")
+            nome_usuario = usuarios_por_id.get(emprestimo["usuario_emprestado_id"], "Usuário desconhecido")
+
+            if emprestimo['status'] == 'Ativo':
+                lv_emprestimos.controls.append(
+                    ft.ListTile(
+                        leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
+                        title=ft.Text(f'LIVRO: {titulo_livro}', color=Colors.WHITE),
+                        subtitle=ft.Text(f'USUARIO: {nome_usuario}', color=Colors.WHITE),
+                        bgcolor=Colors.BLUE_900,
+                        expand=True,
+                        trailing=ft.PopupMenuButton(
+                            bgcolor=Colors.BLUE_700,
+                            icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
+                            items=[
+                                ft.PopupMenuItem(
+                                    text='Detalhes',
+                                    on_click=lambda _, m=emprestimo: exibir_detalhes_emprestimos(m)
+
+                                ),
+                                ft.PopupMenuItem(text='Devolver livro',
+                                                 on_click=lambda _, m=emprestimo: editar_statuss_emprestimo(e, m))
+                            ]
+                        )
                     )
                 )
-            )
-
-    # def add_emprestimo_lista(e):
-    #     lv_emprestimos.controls.clear()
-    #     resultado_emprestimo = listar_emprestimos()
-    #     print(f'Resltuado: {resultado_emprestimo}')
-    #
-    #     for emprestimo in resultado_emprestimo:
-    #         lv_emprestimos.controls.append(
-    #             ft.ListTile(
-    #                 leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-    #                 title=ft.Text(f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}', color=Colors.WHITE),
-    #                 bgcolor=Colors.BLUE_900,
-    #                 trailing=ft.PopupMenuButton(
-    #                     bgcolor=Colors.BLUE_700,
-    #                     icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
-    #                     items=[
-    #                         ft.PopupMenuItem(text=f'Detalhes',
-    #                                          on_click=lambda _, m=emprestimo: exibir_detalhes_emprestimos(m))
-    #                     ]
-    #                 )
-    #             )
-    #         )
-    #
-    # def exibir_detalhes_emprestimos(emprestimo):
-    #     usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
-    #     livro_emprestimo = get_livro(emprestimo["livro_emprestado_id"])
-    #
-    #     txt_resultado_emprestimo.value = (f'Data de devolução - {emprestimo["data_de_devolucao"]}\n'
-    #                                       f''
-    #                                       f'Data de empréstimo - {emprestimo["data_de_emprestimo"]}\n'
-    #                                       f''
-    #                                       f'Usuário empréstimo - {usuario_emprestimo["nome"]}\n'
-    #                                       f''
-    #                                       f'Livro empréstimo - {livro_emprestimo['Titulo']}\n')
-    #     page.go("/exibir_detalhes_emprestimos")
-
-
-
-    # def calcular_status_livro(e):
 
 
     def exibir_detalhes_usuarios(usuario):
@@ -467,6 +499,7 @@ def main(page: ft.Page):
 
         page.go('/exibir_detalhes_usuarios')
 
+
     def editar_pagina_usuario(e, usuario):
         input_nome.value = usuario['nome']
         input_cpf.value = usuario['cpf']
@@ -476,6 +509,7 @@ def main(page: ft.Page):
         id_usuario_global = usuario['id_usuario']
         print(id_usuario_global)
         page.go('/editar_usuario')
+
 
     def editar_pagina_livro(e, livro):
         input_titulo.value = livro['titulo']
@@ -488,6 +522,16 @@ def main(page: ft.Page):
         print(id_livro_global)
         page.go('/editar_livro')
 
+
+    def editar_status_emprestimo(e, status_emprestimo):
+        input_status.value = status_emprestimo['status']
+
+        global id_emprestimo_global
+        id_status_emprestimo_global = status_emprestimo['status']
+        print(id_status_emprestimo_global)
+        page.go('/editar_status_emprestimos')
+
+
     def exibir_detalhes_livro(livroo):
         txt_resultado_livros.value = (f'Titulo - {livroo['titulo']}\n'
                                       f'Resumo - {livroo['resumo']}\n'
@@ -496,6 +540,7 @@ def main(page: ft.Page):
                                       f'ID - {livroo['id_livro']}\n')
 
         page.go('/exibir_detalhes_livro')
+
 
     def salvar_livros(e):
         if (input_titulo.value == '' or input_autor.value == ''
@@ -520,6 +565,7 @@ def main(page: ft.Page):
             msg_sucesso.open = True
             page.update()
 
+
     def salvar_usuarios(e):
         if (input_nome.value == '' or input_cpf.value == ''
                 or input_endereco.value == ''):
@@ -540,6 +586,7 @@ def main(page: ft.Page):
             page.overlay.append(msg_sucesso)  # overlay sob escreve a página
             msg_sucesso.open = True
             page.update()
+
 
     def salvar_emprestimos(e):
         if (input_data_emprestimo.value == '' or input_data_devoulucao.value == ''
@@ -571,6 +618,7 @@ def main(page: ft.Page):
                 page.overlay.append(msg_sucesso)  # overlay sob escreve a página
                 msg_sucesso.open = True
             page.update()
+
 
     def exibir_detalhes_emprestimos(emprestimo):
         usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
@@ -617,6 +665,7 @@ def main(page: ft.Page):
                 msg_sucesso.open = True
             page.update()
 
+
     def editar_livro(e):
         print(input_titulo.value)
         if input_titulo.value == '' or input_resumo.value == '' or input_autor.value == '' or input_ISBN.value == '':
@@ -652,6 +701,18 @@ def main(page: ft.Page):
                 msg_sucesso.open = True
             page.update()
 
+
+    def editar_statuss_emprestimo(e, emprestimo):
+        resultado = editar_status_emprestimo_rota(emprestimo['id_emprestimo'])
+
+        print(resultado, 'aaaaaaaaaaaaaaaaaaa')
+
+        page.overlay.append(msg_sucesso_status)
+        msg_sucesso_status.open = True
+
+        page.update()
+
+
     dlg_modal = ft.AlertDialog(
         title=ft.Text("ALERTA‼️"),
         content=ft.Text("Você realmente confirma esse cadastro, após cadastrado não terá como editar",
@@ -665,15 +726,17 @@ def main(page: ft.Page):
         bgcolor=Colors.BLUE_700,
     )
 
+
     def fechar_dialogo(e):
         dlg_modal.open = False
         page.update()
 
-        # except Exception as exc:
-        #     page.overlay.append(msg_error)
-        #     msg_error.open = True
-        #     print(f"Erro ao editar usuário: {exc}")  # Log do erro para depuração
-        #     page.update()
+    # except Exception as exc:
+    #     page.overlay.append(msg_error)
+    #     msg_error.open = True
+    #     print(f"Erro ao editar usuário: {exc}")  # Log do erro para depuração
+    #     page.update()
+
 
     def gerencia_rotas(e):
         page.views.clear()
@@ -765,7 +828,14 @@ def main(page: ft.Page):
                 View(
                     '/exibir_livros',
                     [
-                        AppBar(title=Text("Listar", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        # ft.Column(
+                        #     [
+                        #         progress
+                        #     ],
+                        #     width=page.window.width,
+                        #     horizontal_alignment=CrossAxisAlignment.CENTER
+                        # ),
+                        AppBar(title=Text("Exibir livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
                                center_title=True),
                         ft.Button(
                             text="Buscar Livro",
@@ -773,9 +843,10 @@ def main(page: ft.Page):
                             height=40,
                             bgcolor=Colors.BLUE_800,
                             color=Colors.WHITE,
-                            on_click=lambda _: buscar_livro_id(e)
+                            on_click=lambda _: buscar_livro_id(e),
 
                         ),
+
                         lv_livros,
 
                     ],
@@ -904,7 +975,7 @@ def main(page: ft.Page):
                 View(
                     'exibir_usuarios',
                     [
-                        AppBar(title=Text("Exibir lista", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Exibir Usuários", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
                                center_title=True),
                         ft.Button(
                             text="Buscar Usuário",
@@ -1019,9 +1090,14 @@ def main(page: ft.Page):
                         input_get_livro_emprestimo,
                         input_get_usuario_emprestimo,
 
-
-
                         ft.ElevatedButton("Salvar", on_click=lambda e: page.open(dlg_modal)),
+                        # ft.IconButton(
+                        #     icon=ft.Icons.CHECK_CIRCLE,
+                        #     icon_color=ft.Colors.GREEN,
+                        #     icon_size=30,
+                        #     tooltip="Yep",
+                        #     on_click=lambda e: page.open(dlg_modal),
+                        # ),
 
                         # ft.ElevatedButton("Você realmente quer enviar esse cadastro?", on_click=lambda e: page.open(dlg_modal)),
 
@@ -1039,15 +1115,17 @@ def main(page: ft.Page):
 
         if page.route == "/exibir_emprestimos":
             add_emprestimo_lista(e)
+            add_livros_devolvidos(e)
             page.views.append(
                 View(
                     "/exibir_emprestimos",
                     [
                         AppBar(title=Text("Lista", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
                                center_title=True),
-                        lv_emprestimos,
+                        t,
+
                     ],
-                    bgcolor=Colors.BLUE_900,
+                    bgcolor=Colors.BLUE_200,
                 )
             )
 
@@ -1065,10 +1143,18 @@ def main(page: ft.Page):
             )
         page.update()
 
-    # Componentes
+
+# Componentes
+    progress = ft.ProgressRing(visible=False)
+
     msg_sucesso = ft.SnackBar(
 
         content=ft.Text("campos salvo com sucesso"),
+        bgcolor=Colors.GREEN
+    )
+
+    msg_sucesso_status = ft.SnackBar(
+        content=ft.Text("Livro devolvido com sucesso"),
         bgcolor=Colors.GREEN
     )
 
@@ -1087,13 +1173,13 @@ def main(page: ft.Page):
 
     imagem_2 = ft.Image(
         src='usuarios.png',
-        width=200,
+        width=150,
         fit=ft.ImageFit.CONTAIN,
         border_radius=10,
     )
 
     imagem_3 = ft.Image(
-        src='emoti.png',
+        src='livros_em.jpg',
         width=200,
         fit=ft.ImageFit.CONTAIN,
         border_radius=10,
@@ -1134,9 +1220,15 @@ def main(page: ft.Page):
                                          hover_color=Colors.BLUE)
 
     lv_emprestimos = ft.ListView(
-        height=400,
-        spacing=2,
-        divider_thickness=2
+        height=700,
+        spacing=5,
+        divider_thickness=0
+    )
+
+    lv_emprestimos_devolvidos = ft.ListView(
+        height=700,
+        spacing=5,
+        divider_thickness=0
     )
 
     txt_resultado_emprestimo = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
@@ -1170,16 +1262,65 @@ def main(page: ft.Page):
         color=Colors.BLACK,
     )
 
-    # Eventos
+    lv_livros.controls.clear()
+    resultado_emprestimo = listar_emprestimos()
+    print(f'Resltuado: {resultado_emprestimo}')
+
+    input_status = ft.Dropdown(
+        bgcolor=Colors.BLUE_200,
+        width=page.window.width,
+        fill_color=Colors.RED,
+        options=[Option(key='Ativo', text='Ativo'), Option(key='Devolvido', text='Devolvido'),
+                 Option(key='Atrasado', text='Atrasado')],
+        color=Colors.BLACK,
+    )
+
+    t = ft.Tabs(
+
+        selected_index=1,
+        animation_duration=300,
+        tabs=[
+            ft.Tab(
+                text="Emprestado",
+                content=ft.Container(
+                    lv_emprestimos,
+
+                ),
+            ),
+            ft.Tab(
+
+                text="Devovlvidos",
+                icon=ft.Icons.SETTINGS,
+                content=ft.Container(
+                    lv_emprestimos_devolvidos,
+
+                ),
+
+            ),
+
+            ft.Tab(
+                tab_content=ft.CircleAvatar(
+                    foreground_image_src="https://avatars.githubusercontent.com/u/7119543?s=88&v=4"
+                ),
+                content=ft.Container(
+                    content=ft.Text("This is Tab 3"), alignment=ft.alignment.center
+                ),
+            ),
+        ],
+        expand=1,
+    )
+
+
+# Eventos
     def voltar(e):
         page.views.pop()
         top_view = page.views[-1]
         page.go(top_view.route)
 
+
     page.on_route_change = gerencia_rotas
     page.on_view_pop = voltar
     page.go(page.route)
-
 
 # Comando que executa o aplicativo
 # Deve estar sempre colado na linha
