@@ -229,7 +229,7 @@ def main(page: ft.Page):
             titulo_livro = livro["titulo"]
             isbn_livro = livro["ISBN"]
 
-            # Verifica se o livro está emprestado
+            # Verifica se o livro está emprestadoo
             if livro_id in livros_emprestados_ids:
                 bgcolor = Colors.RED_500
                 subtitle_text = f'EMPRESTADO'
