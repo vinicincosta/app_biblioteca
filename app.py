@@ -217,7 +217,7 @@ def main(page: ft.Page):
 
         # Criar lista vazia []
         livros_emprestados_ids = []
-        # Cria um conjunto de IDs de livros emprestados
+        # Cria um conjunto de IDs de livros emprestadosss
         for emprestimo in resultado_emprestimo:
             if emprestimo['status'] != 'Devolvido':
                 livros_emprestados_ids.append(emprestimo['livro_emprestado_id'])
