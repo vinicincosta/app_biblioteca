@@ -1,3 +1,5 @@
+from idlelib.outwin import file_line_pats
+
 import flet as ft
 from flet import AppBar, Text, View, Container, Column
 from flet.core.colors import Colors
@@ -133,8 +135,15 @@ def main(page: ft.Page):
 
 
         for usuario in resultado_usuarios:
-            if usuario['status_user'] == "Inativo":
-                login_message.value = f'Erro: usuario inativo'
+            if usuario['cpf'] == input_cpf_login.value:
+                if usuario['status_user'] == "Inativo":
+                    print("ggggggg")
+                    login_message.value = 'Erro: Usuário Inativo'
+                    print('hhhhhhhhh')
+                    page.update()
+                    return
+
+
 
             else:
                 if token:
@@ -149,7 +158,6 @@ def main(page: ft.Page):
                         login_message.value = 'Erro: Papel do usuário desconhecido.'
                 else:
                     login_message.value = f'Erro: {error}'
-
                 page.update()
 
     def cadastrar_usuario(nome, cpf, papel, senha, endereco, status_user):
@@ -1194,6 +1202,9 @@ def main(page: ft.Page):
             )
 
         if page.route == "/cadastro_usuario_login":
+            input_nome.value = ""
+            input_cpf_cadastro.value = ""
+            input_endereco.value = ""
             cadastro_message.value = ""
             page.views.append(
                 View
@@ -1434,7 +1445,8 @@ def main(page: ft.Page):
                                 ),
                                 pagelet,
                             ],
-                            height=300
+                            height=page.window.height,
+
                         )
                     ],
                     bgcolor=Colors.BLUE_200
@@ -2238,8 +2250,8 @@ def main(page: ft.Page):
     )
 
     # Mensagem de login
-    login_message = ft.Text('', color=Colors.RED_700, size=18, font_family="Arial", bgcolor=Colors.WHITE70,
-                            )
+    login_message = ft.Text('', color=Colors.RED_ACCENT_700, size=18, font_family="Arial", bgcolor=Colors.WHITE)
+
 
     # Campos de entrada
     input_nome = ft.TextField(
