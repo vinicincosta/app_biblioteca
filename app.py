@@ -7,6 +7,7 @@ import requests
 from flet.core.cupertino_app_bar import CupertinoAppBar
 from flet.core.dropdown import Option
 from flet.core.elevated_button import ElevatedButton
+from flet.core.icons import Icons
 from flet.core.types import CrossAxisAlignment
 
 from rotas import *
@@ -120,45 +121,44 @@ def main(page: ft.Page):
 
     def on_login_click(e):
         resultado_usuarios = listar_usuario()
-        print(f'Resltuado: {resultado_usuarios}')
+        print(f'Resultado: {resultado_usuarios}')
+
         # Verifica se os campos estão preenchidos
         if not input_cpf_login.value or not input_senha_login.value:
-            login_message.value = 'Erro: CPF e senha são obrigatórios.'
+            snack_error('Erro: CPF e senha são obrigatórios.')
             page.update()
             return
 
         # Chama a função de login
         token, papel, nome, error = login(input_cpf_login.value, input_senha_login.value)
 
-        # Adicione um print para verificar os valores retornados
+
         print(f"Token: {token}, Papel: {papel}, Nome: {nome}, Erro: {error}")
 
-
+        # Verifica se o usuário está inativo
         for usuario in resultado_usuarios:
-            if usuario['cpf'] == input_cpf_login.value:
+            if usuario['cpf'] == input_cpf_login.value:  # Verifica se o CPF corresponde
                 if usuario['status_user'] == "Inativo":
-                    print("ggggggg")
-                    login_message.value = 'Erro: Usuário Inativo'
-                    print('hhhhhhhhh')
+                    snack_error('Erro: usuário inativo.')
                     page.update()
-                    return
+                    return  # Sai da função se o usuário estiver inativo
 
 
+        # Se o login foi bem-sucedido e o usuário está ativo
+        if token:
+            snack_sucesso(f'Login bem-sucedido, {nome} ({papel})!')
+            print(f"Papel do usuário: {papel}, Nome: {nome}")
 
+            if papel == "usuario":
+                page.go("/primeira_user")  # Redireciona para a rota do usuário
+            elif papel == "admin":
+                page.go("/primeira")  # Redireciona para a rota do admin
             else:
-                if token:
-                    login_message.value = f'Login bem-sucedido, {nome} ({papel})!'
-                    print(f"Papel do usuário: {papel}, Nome: {nome}")
+               snack_error('Erro: Papel do usuário desconhecido.')
+        else:
+            snack_error(f'Erro: {error}')
 
-                    if papel == "usuario":
-                        page.go("/primeira_user")  # Redireciona para a rota do usuário
-                    elif papel == "admin":
-                        page.go("/primeira")  # Redireciona para a rota do admin
-                    else:
-                        login_message.value = 'Erro: Papel do usuário desconhecido.'
-                else:
-                    login_message.value = f'Erro: {error}'
-                page.update()
+        page.update()
 
     def cadastrar_usuario(nome, cpf, papel, senha, endereco, status_user):
         url = 'http://10.135.235.29:5000/cadastro'
@@ -191,10 +191,16 @@ def main(page: ft.Page):
             input_status_user.value
         )
         if usuario:
-            cadastro_message.value = f'Usuário criado com sucesso! ID: {usuario["user_id"]}'
+            snack_sucesso(f'Usuário criado com sucesso! ID: {usuario["user_id"]}')
             page.overlay.append(msg_sucesso)
+            input_nome.value = ""
+            input_cpf_cadastro.value = ""
+            input_papel.value = ""
+            input_senha_cadastro.value = ""
+            input_endereco.value = ""
+            input_status_user_usuario.value = ""
         else:
-            cadastro_message.value = f'Erro: {error}'
+            snack_error(f'Erro: {error}')
         page.update()
 
     def on_cadastro_click_user(e):
@@ -210,10 +216,15 @@ def main(page: ft.Page):
         print("aaaaaaaaa")
         if usuario:
             print("aaaaaa")
-            cadastro_message.value = f'Usuário criado com sucesso! ID: {usuario["user_id"]}'
-            print("aaaaaaaa")
+            snack_sucesso(f'Usuário criado com sucesso! ID: {usuario["user_id"]}')
+            input_nome.value = ""
+            input_cpf_cadastro.value = ""
+            input_papel_usuario.value = ""
+            input_senha_cadastro.value = ""
+            input_endereco.value = ""
+            input_status_user_usuario.value = ""
         else:
-            cadastro_message.value = f'Erro: {error}'
+            snack_error(f'Erro: {error}')
         page.update()
 
     def cadastrar_livro_post(novo_livro):
@@ -368,6 +379,7 @@ def main(page: ft.Page):
             print(f'Erro: {response.status_code}')
             return response.json()
 
+
     def get_data_devolucao(e):
         prazo = input_data_devoulucao.value
         data_devolucao = input_data_emprestimo.value
@@ -402,6 +414,7 @@ def main(page: ft.Page):
         lv_livros.controls.clear()
         resultado_lista = listar_livro()
         resultado_emprestimo = listar_emprestimos()
+        resultado_usuario = listar_usuario()
         print(f'Resultado: {resultado_lista}')
 
         # Criar listas vazias para IDs de livros
@@ -456,6 +469,7 @@ def main(page: ft.Page):
                         )
                     )
                     for livro in resultado_lista
+
                 ],
                 expand=True,  # Permite que o ListView ocupe o espaço disponível
             )
@@ -463,6 +477,28 @@ def main(page: ft.Page):
 
         progress.visible = False  # Oculta o progresso após a atualização da lista
         page.update()
+
+    # def emprestimos_que_usuario_tem(user):
+    #     lv_historico_emprestimos.controls.clear()
+    #     dados = historio_emprestimo_usuario(user['id'])
+    #     print(dados)
+    #     for abu in dados:
+    #         lv_historico_emprestimos.controls.append(
+    #             ft.Text(value='data de devolução ' + abu['data_de_devolucao'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(
+    #             ft.Text(value='data do emprestimo ' + abu['data_emprestimo'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(ft.Text(value=abu['id_emprestimo'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(ft.Text(value=abu['livro']['ISBN'], color=Colors.BLACK))
+    #         if abu['livro']['status']:
+    #             lv_historico_emprestimos.controls.append(ft.Text(value='Livro já foi devolvido', color=Colors.BLACK))
+    #         else:
+    #             lv_historico_emprestimos.controls.append(ft.Text(value='Livro ainda não foi devolvido', color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(ft.Text(value='Titulo ' + abu['livro']['titulo'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(ft.Text(value='CPF do usurio ' + abu['usuario']['CPF'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(
+    #             ft.Text(value='Endereço do usuario ' + abu['usuario']['endereco'], color=Colors.BLACK))
+    #         lv_historico_emprestimos.controls.append(ft.Text(value='Nome do usuario ' + abu['usuario']['nome'], color=Colors.BLACK))
+    #     page.go('/emprestimo_usuario')
 
     def add_titulo_lista_user(e):
         progress.visible = True
@@ -791,7 +827,7 @@ def main(page: ft.Page):
             ft.ListView(
                 controls=[
                     ft.ListTile(
-                        leading=ft.Icon(ft.Icons.ACCOUNT_BOX, color=Colors.BLACK),
+                        leading=ft.Icon(Icons.API, color=Colors.BLACK) if usuario["papel"] == "admin" else ft.Icon(Icons.PERSON,color=Colors.BLACK),
                         title=ft.Text(f'Nome - {usuario["nome"]}', color=Colors.WHITE),
                         subtitle=ft.Text(f'INATIVO' if usuario["status_user"] in usuarios_inativos else
                                          f'ATIVO' if usuario["status_user"] in usuarios_ativos else
@@ -882,7 +918,8 @@ def main(page: ft.Page):
                                         f'Endereço - {usuario['endereco']}\n'
                                         f'Id - {usuario["id_usuario"]}\n'
                                         f'Papel - {usuario["papel"]}\n'
-                                        f'Status - {usuario["status_user"]}')
+                                        f'Status - {usuario["status_user"]}'
+                                       )
 
         page.go('/exibir_detalhes_usuarios')
 
@@ -1157,7 +1194,14 @@ def main(page: ft.Page):
 
         page.go('/')
 
+    def click_logout(e):
+        page.client_storage.remove("access_token")
+        snack_sucesso("logout realizado com sucesso")
+        page.go("/")
+
     def gerencia_rotas(e):
+        input_cpf_login.value = ""
+        input_senha_login.value = ""
         page.views.clear()
         if page.route == "/":
             page.views.append(
@@ -1179,7 +1223,6 @@ def main(page: ft.Page):
                                     bgcolor=Colors.BLUE_800,
                                     color=Colors.WHITE,
                                 ),
-                                login_message,
                             ],
                             spacing=20,
                         ),
@@ -1205,7 +1248,7 @@ def main(page: ft.Page):
             input_nome.value = ""
             input_cpf_cadastro.value = ""
             input_endereco.value = ""
-            cadastro_message.value = ""
+
             page.views.append(
                 View
                     (
@@ -1232,7 +1275,6 @@ def main(page: ft.Page):
                             bgcolor=Colors.BLUE_900,
                             color=Colors.WHITE,
                         ),
-                        cadastro_message
                     ],
                     bgcolor=Colors.BLUE_200,
 
@@ -1245,9 +1287,7 @@ def main(page: ft.Page):
                     "/primeira",
                     [
                         AppBar(title=Text("Livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
-                               center_title=True),
-
-                        login_message,
+                               center_title=True, leading=ft.Icon(), actions=[btn_logout]),
                         Container(
                             Column(
                                 [
@@ -1282,12 +1322,10 @@ def main(page: ft.Page):
                             padding=ft.padding.only(top=5)
 
                         ),
-
-                        ElevatedButton("Sair",
-                                       on_click=lambda e: sair_login(e)),
                         pagelet,
                     ],
                     bgcolor=Colors.BLUE_200,
+
                 )
             )
 
@@ -1425,13 +1463,6 @@ def main(page: ft.Page):
                                center_title=True),
                         ft.Column(
                             [
-                                ElevatedButton("Voltar", on_click=lambda _: page.go("/exibir_livros")),
-                                ft.Button(
-                                    text="Salvar",
-                                    bgcolor=Colors.BLUE_ACCENT,
-                                    color=Colors.BLACK,
-                                    on_click=lambda _: editar_livro(e),
-                                ),
                                 input_titulo,
                                 input_autor,
                                 input_resumo,
@@ -1443,9 +1474,11 @@ def main(page: ft.Page):
                                     color=Colors.BLACK,
                                     on_click=lambda _: editar_livro(e),
                                 ),
+                                ElevatedButton("Voltar", on_click=lambda _: page.go("/exibir_livros")),
                                 pagelet,
                             ],
                             height=page.window.height,
+                            scroll=ft.ScrollMode.HIDDEN,
 
                         )
                     ],
@@ -1619,7 +1652,6 @@ def main(page: ft.Page):
             input_endereco.value = ""
             input_papel.value = ""
             input_endereco.value = ""
-            cadastro_message.value = ""
             input_status_user.value = ""
             page.views.append(
                 View(
@@ -1646,15 +1678,6 @@ def main(page: ft.Page):
                             color=Colors.BLACK,
                             on_click=lambda _: page.go('/exibir_usuarios'),
                         ),
-
-                        # ft.Column(
-                        #     [
-                        #         progress
-                        #     ],
-                        #     width=page.window.width,
-                        #     horizontal_alignment=CrossAxisAlignment.CENTER
-                        # ),
-                        cadastro_message,
                         pagelet,
 
                     ],
@@ -1827,7 +1850,6 @@ def main(page: ft.Page):
             )
 
         if page.route == "/quarta_teste":
-            cadastro_message.value = ""
             page.views.append(
                 View(
                     "/quarta_teste",
@@ -1845,7 +1867,6 @@ def main(page: ft.Page):
                             bgcolor=Colors.BLUE_800,
                             color=Colors.WHITE,
                         ),
-                        cadastro_message,
                         pagelet,
                     ],
                     bgcolor=Colors.BLUE_200,
@@ -1858,9 +1879,7 @@ def main(page: ft.Page):
                     "/primeira_user",
                     [
                         AppBar(title=Text("Livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
-                               center_title=True),
-
-                        login_message,
+                               center_title=True, leading=ft.Icon(), actions=[btn_logout]),
                         Container(
                             Column(
                                 [
@@ -1888,8 +1907,6 @@ def main(page: ft.Page):
                             padding=ft.padding.only(top=5)
 
                         ),
-                        ElevatedButton("Sair",
-                                       on_click=lambda e: sair_login(e)),
                         pagelet_user,
                     ],
                     bgcolor=Colors.BLUE_200,
@@ -2019,9 +2036,7 @@ def main(page: ft.Page):
                     [
                         AppBar(title=Text("Histórico", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
                                center_title=True),
-                        lv_historico_emprestimos,
-
-                        pagelet_user
+                        lv_historico_emprestimos
                     ]
 
                 )
@@ -2105,7 +2120,7 @@ def main(page: ft.Page):
 
     )
 
-    txt_resultado_usuarios = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
+    txt_resultado_usuarios = ft.Text('', font_family="Arial", size=19, color=Colors.BLACK, )
 
     lv_historico_emprestimos = ft.ListView(
         height=700,
@@ -2226,6 +2241,14 @@ def main(page: ft.Page):
 
     # Elementos de Login
 
+
+    btn_logout = ft.TextButton(
+        icon=Icons.LOGOUT,
+        scale=1.5,
+        icon_color=Colors.RED_700,
+        on_click=click_logout
+    )
+
     input_cpf_login = ft.TextField(
         label='CPF',
         hint_text='Insira seu CPF',
@@ -2331,7 +2354,21 @@ def main(page: ft.Page):
         ],
     )
 
-    cadastro_message = ft.Text('', color=Colors.RED_700, size=18, font_family="Arial", bgcolor=Colors.WHITE70, )
+    def snack_sucesso(texto: str):
+        page.snack_bar = ft.SnackBar(
+            content=ft.Text(texto),
+            bgcolor=Colors.GREEN
+        )
+        page.snack_bar.open = True
+        page.overlay.append(page.snack_bar)
+
+    def snack_error(texto: str):
+        page.snack_bar = ft.SnackBar(
+            content=ft.Text(texto),
+            bgcolor=Colors.RED
+        )
+        page.snack_bar.open = True
+        page.overlay.append(page.snack_bar)
 
     # Eventos
     def voltar(e):
