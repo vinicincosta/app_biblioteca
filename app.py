@@ -70,8 +70,8 @@ def main(page: ft.Page):
                 ft.NavigationBarDestination(icon=ft.Icons.BOOK, label="Livros"),
                 ft.NavigationBarDestination(icon=ft.Icons.ADD_ALERT, label="Empréstimos"),
                 ft.NavigationBarDestination(
-                    icon=ft.Icons.EMAIL_SHARP,
-                    selected_icon=ft.Icons.EMAIL_SHARP,
+                    icon=ft.Icons.HISTORY,
+                    selected_icon=ft.Icons.HISTORY,
                     label="Ativos",
                 ),
 
@@ -88,20 +88,7 @@ def main(page: ft.Page):
     )
 
     # Funções
-    def get_data_devolucao(e):
-        prazo = input_data_devoulucao.value
-        data_devolucao = input_data_emprestimo.value
-        url = f'{base_url}/calcular_devolucao/{data_devolucao}+{prazo}'
 
-        response = requests.get(url)
-        if response.status_code == 200:
-            dados_get_postagem = response.json()
-            print(dados_get_postagem)
-            return dados_get_postagem["devolucao"]
-
-        else:
-            print(f'Erro: {response.json()}')
-            return response.json()
 
     def on_login_click(e):
         loading_indicator.visible = True
@@ -179,6 +166,9 @@ def main(page: ft.Page):
             if usuario:
                 snack_sucesso(f'Usuário criado com sucesso! ID: {usuario["user_id"]}')
                 page.overlay.append(msg_sucesso)
+                page.go("/")
+                page.update()
+
                 input_nome.value = ""
                 input_cpf_cadastro.value = ""
                 input_papel.value = None
@@ -188,12 +178,13 @@ def main(page: ft.Page):
                 input_status_user.value = None
             else:
                 snack_error(f'Erro: {error}')
+                page.update()
 
 
         except Exception as e:
             snack_error(f'Erro: {e}')
 
-        page.go("/")
+
         page.update()
 
 
@@ -249,7 +240,7 @@ def main(page: ft.Page):
                             items=[
                                 ft.PopupMenuItem(
                                     text='Detalhes',
-                                    on_click=lambda _, l=livro: exibir_detalhes_livro(l)
+                                    on_click=lambda _, l=livro: exibir_detalhes_livro_user(l)
                                 ),
                                 # ft.PopupMenuItem(
                                 #     text='Editar',
@@ -305,12 +296,15 @@ def main(page: ft.Page):
                         leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
                         title=ft.Text(
                             f'Título - {livro["titulo"]}',
-                            color=Colors.WHITE
+                            color=Colors.WHITE,
+                            font_family="Arial"
                         ),
                         subtitle=ft.Text(
-                            'Ativo',
-                            color=Colors.WHITE
+                            f'Devoulução - {emp["data_de_devolucao"]}',
+                            color=Colors.WHITE,
+                            font_family="Arial"
                         ),
+
                         bgcolor=Colors.BLUE_900,
                         height=80,
                         trailing=ft.PopupMenuButton(
@@ -328,7 +322,7 @@ def main(page: ft.Page):
                                 ),
                                 ft.PopupMenuItem(
                                     text='Devolver livro',
-                                    # 🔥 PASSA O EMPRÉSTIMO CORRETO
+                                    # PASSA O EMPRÉSTIMO CORRETO
                                     on_click=lambda _, emp=emp: editar_statuss_emprestimo(e, emp)
                                 ),
                             ],
@@ -644,7 +638,7 @@ def main(page: ft.Page):
                 # Verifica se o livro está emprestado
 
                 if livro_id in livros_emprestados_ids:
-                    bgcolor = Colors.ORANGE_ACCENT  # Cor para livros emprestados
+                    bgcolor = Colors.ORANGE  # Cor para livros emprestados
                     subtitle_text = 'EMPRESTADO'
                 else:
                     bgcolor = Colors.BLUE_900  # Cor para livros disponíveis
@@ -661,9 +655,9 @@ def main(page: ft.Page):
                             bgcolor=Colors.BLUE_700,
                             items=[
                                 ft.PopupMenuItem(text='Detalhes',
-                                                 on_click=lambda _, l=livro_filtrado: exibir_detalhes_livro(l)),
-                                ft.PopupMenuItem(text='Editar',
-                                                 on_click=lambda _, l=livro_filtrado: editar_pagina_livro(e, l)),
+                                                 on_click=lambda _, l=livro_filtrado: exibir_detalhes_livro_user(l)),
+                                # ft.PopupMenuItem(text='Editar',
+                                #                  on_click=lambda _, l=livro_filtrado: editar_pagina_livro(e, l)),
                             ],
                         )
                     )
@@ -921,41 +915,34 @@ def main(page: ft.Page):
                 page.go('/login')
                 return
 
-
-            if (input_data_emprestimo.value == '' or input_data_devoulucao.value == ''
-                    or input_get_livro_emprestimo == ''):
-                page.overlay.append(msg_error)
+            if  input_get_livro_emprestimo.value == '':
                 msg_error.open = True
                 page.update()
+                return
+
+            novo_emprestimo = {
+
+                "livro_emprestado_id": input_get_livro_emprestimo.value,
+                "usuario_emprestado_id": usuario_id,
+            }
+
+            resposta = cadastrar_emprestimo_post(novo_emprestimo)
+
+            if "error" in resposta:
+                msg_error.open = True
             else:
-                print('aaaaaaaaaaaaaaaa')
+                dlg_modal.open = False
 
-                data_calculada = get_data_devolucao(e)
-                novo_emprestimo = {
+                input_get_livro_emprestimo.value = ''
+                page.overlay.append(msg_sucesso)  # overlay sob escreve a página
+                msg_sucesso.open = True
 
-                    'data_de_emprestimo': input_data_emprestimo.value,
-                    'data_de_devolucao': data_calculada,
-                    'livro_emprestado_id': input_get_livro_emprestimo.value,
-                    'usuario_emprestado_id': usuario_id,
-                }
-                print(novo_emprestimo)
-                resposta_emprestimo = cadastrar_emprestimo_post(novo_emprestimo)
+            page.update()
 
-                if 'error' in resposta_emprestimo:
-                    msg_error.open = True
-                else:
-                    dlg_modal.open = False
-                    input_data_emprestimo.value = ''
-                    input_data_devoulucao.value = ''
-
-                    input_get_livro_emprestimo.value = ''
-                    page.overlay.append(msg_sucesso)  # overlay sob escreve a página
-                    msg_sucesso.open = True
-                page.update()
-
-        except Exception as err:
-            print("Erro ao salvar empréstimo", err)
+        except Exception as e:
+            print("Erro:", e)
             snack_error("Erro ao salvar empréstimo")
+
 
     def exibir_detalhes_emprestimos(emprestimo):
         usuario_emprestimo = get_usuario(emprestimo["usuario_emprestado_id"])
@@ -1051,7 +1038,9 @@ def main(page: ft.Page):
     def editar_statuss_emprestimo(e, emprestimo):
         resultado = editar_status_emprestimo_rota(emprestimo['id_emprestimo'])
 
-        print(resultado, 'aaaaaaaaaaaaaaaaaaa')
+        if "error" not in resultado:
+            msg_sucesso_status.open = True
+            livros_emprestados(e)
 
         page.overlay.append(msg_sucesso_status)
         msg_sucesso_status.open = True
@@ -1137,6 +1126,8 @@ def main(page: ft.Page):
             input_nome.value = ""
             input_email_login.value = ""
             input_endereco.value = ""
+            input_cpf_cadastro.value = ""
+            input_senha_cadastro.value = ""
 
             page.views.append(
                 View
@@ -1507,7 +1498,7 @@ def main(page: ft.Page):
                             ft.IconButton(
                                 ft.Icons.ARROW_BACK,
                                 tooltip="Voltar",
-                                on_click=lambda _: page.go("/terceira_user")
+                                on_click=lambda _: page.go("/emprestimos_ativos")
                             ),
                             indicador,
                             ft.Row(
@@ -1946,17 +1937,31 @@ def main(page: ft.Page):
                 View(
                     "/cadastrar_emprestimos_user",
                     [
-                        AppBar(title=Text("Cadastro Empéstimos", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
-                               center_title=True),
-                        input_data_emprestimo,
-                        input_data_devoulucao,
+                        AppBar(
+                            title=Text("Cadastro de Empréstimos"),
+                            bgcolor=Colors.BLUE_ACCENT,
+                            center_title=True
+                        ),
+
+
+
+                        ft.Text(
+                            "Prazo máximo de devolução: 20 dias",
+                            font_family="Arial",
+                            weight="bold",
+                            size=18,
+                            color=Colors.BLACK,
+                        ),
+
+                        # (Opcional)
+                        txt_data_prevista,
+
                         input_get_livro_emprestimo,
 
-                        ft.ElevatedButton("Salvar", on_click=lambda e: page.open(dlg_modal)
-                                          ),
+
+                        ft.ElevatedButton("Salvar", on_click=lambda e: page.open(dlg_modal)),
 
                         pagelet_user
-
                     ],
                     bgcolor=Colors.BLUE_200,
                 )
@@ -1972,7 +1977,7 @@ def main(page: ft.Page):
                         Container(
                             Column(
                                 [
-                                    imagem_3,
+                                    imagem_4,
                                 ],
                                 alignment=ft.MainAxisAlignment.CENTER,
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER),
@@ -2087,7 +2092,7 @@ def main(page: ft.Page):
         icon=Icons.LOGOUT,
         scale=1.5,
         icon_color=Colors.BLUE_700,
-        on_click=lambda _: page.go("/exibir_livros_user"),
+        on_click=lambda _: page.go("/emprestimos_ativos"),
     )
 
     msg_sucesso = ft.SnackBar(
@@ -2127,6 +2132,12 @@ def main(page: ft.Page):
         fit=ft.ImageFit.CONTAIN,
         border_radius=10,
 
+    )
+    imagem_4 = ft.Image(
+        src="livro png.png",
+        width=200,
+        fit=ft.ImageFit.CONTAIN,
+        border_radius=10,
     )
 
     # LIVROS
@@ -2169,8 +2180,12 @@ def main(page: ft.Page):
 
 
     # EMPRÉSTIMOS
-    input_data_devoulucao = ft.TextField(label='Prazo de devolução', hint_text='insira a data de devoulucao', col=4,
-                                         hover_color=Colors.BLUE)
+    txt_data_prevista = ft.Text(
+        "Data prevista de devolução: --/--/----",
+        size=14,
+        color=Colors.BLACK87
+    )
+
     input_data_emprestimo = ft.TextField(label='Data de empréstimo', hint_text='insira a data de empréstimo', col=4,
                                          hover_color=Colors.BLUE)
 

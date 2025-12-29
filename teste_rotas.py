@@ -198,6 +198,19 @@ def get_livro(id):
         print(f'Erro: {response.status_code}')
         return response.json()
 
+
+
+def get_livro(id):
+    url = f'{base_url}/get_livro/{id}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        dados_get_postagem = response.json()
+        print(dados_get_postagem)
+        return dados_get_postagem
+    else:
+        print(f'Erro: {response.status_code}')
+        return response.json()
+
 def get_usuario(id):
     url = f'{base_url}/get_usuario/{id}'
     response = requests.get(url)
