@@ -280,8 +280,50 @@ def main(page: ft.Page):
         # 1️⃣ Filtrar empréstimos ATIVOS do usuário logado
         emprestimos_user_ativos = [
             emp for emp in emprestimos
-            if emp.get("usuario_emprestado_id") == usuario_id and emp.get("status") == "Ativo"
+            if emp.get("usuario_emprestado_id") == usuario_id
+               and emp.get("status") == "Ativo"
         ]
+
+        lv_livros.controls.clear()
+
+        # Caso não exista nenhum livro emprestado
+        if not emprestimos_user_ativos:
+            lv_livros.controls.append(
+                ft.Container(
+                    alignment=ft.alignment.center,
+                    expand=True,
+                    content=ft.Column(
+                        [
+                            ft.Icon(
+                                ft.Icons.MENU_BOOK,
+                                size=60,
+                                color=Colors.BLACK,
+                            ),
+                            ft.Text(
+                                "Nenhum livro emprestado no momento",
+                                font_family="Arial",
+                                size=18,
+                                weight="bold",
+                                color=Colors.BLACK
+                            ),
+                            ft.Text(
+                                "Quando você realizar um empréstimo, ele aparecerá aqui.",
+                                font_family="Arial",
+                                size=14,
+                                weight="bold",
+                                color=Colors.BLACK
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=10,
+                    ),
+                )
+            )
+
+            progress.visible = False
+            page.update()
+            return
 
         # 2️⃣ Criar dicionário de livros por ID
         livros_por_id = {livro["id_livro"]: livro for livro in livros}
@@ -554,8 +596,10 @@ def main(page: ft.Page):
 
 
                     ],
+
                     spacing=8,
-                )
+                ),
+
             )
 
             lv_emprestimos_geral.controls.append(card)
@@ -2134,7 +2178,7 @@ def main(page: ft.Page):
 
     )
     imagem_4 = ft.Image(
-        src="livro png.png",
+        src="livros1.avif",
         width=200,
         fit=ft.ImageFit.CONTAIN,
         border_radius=10,
@@ -2156,9 +2200,11 @@ def main(page: ft.Page):
     )
 
     lv_livros = ft.ListView(
+        expand=True,
         height=700,
         spacing=5,
-        divider_thickness=2
+        divider_thickness=2,
+        auto_scroll = False  # não rola sozinho
     )
 
     txt_resultado_livros = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
@@ -2196,9 +2242,10 @@ def main(page: ft.Page):
     )
 
     lv_emprestimos_geral = ft.ListView(
-        height=700,
-        spacing=5,
-        divider_thickness=0
+        expand=True,  # ocupa a tela
+        spacing=10,
+        padding=10,
+        auto_scroll=False  # não rola sozinho
     )
 
     lv_emprestimos_devolvidos = ft.ListView(
