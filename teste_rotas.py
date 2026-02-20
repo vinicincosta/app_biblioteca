@@ -1,6 +1,6 @@
 
 import requests
-base_url = "http://192.168.0.17:5000"
+base_url = "http://192.168.0.14:5000"
 
 def login(email, senha):
     url = f"{base_url}/login"
