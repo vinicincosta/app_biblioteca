@@ -14,6 +14,50 @@ from rotas import *
 from datetime import datetime
 import math
 
+# ============================================================================
+# IDENTIDADE VISUAL — "Biblioteca Digital Moderna"
+# ----------------------------------------------------------------------------
+# Paleta centralizada usada em toda a interface. Isto é APENAS estilização
+# (cores em hexadecimal usadas em bgcolor/color/border_color etc.).
+# Nada aqui altera lógica, dados, rotas ou comportamento do app — é somente
+# uma troca dos valores de cor que antes estavam espalhados como
+# Colors.BLUE_200 / Colors.BLUE_900 / Colors.RED / Colors.GREEN etc.
+#
+# Conceito: tons de azul-índigo (tecnologia, seriedade, confiança) + dourado
+# suave como cor de apoio (remete a leitura/livros/conhecimento) sobre um
+# fundo claro tipo "papel" (conforto visual, leitura confortável).
+# ============================================================================
+class BiblioColors:
+    # Cor principal — azul-índigo profundo (tecnologia / organização)
+    PRIMARY = "#3B4E87"
+    PRIMARY_DARK = "#26315C"     # variação escura — AppBars e botões de destaque
+    PRIMARY_LIGHT = "#7C8FD1"    # variação clara — bordas, hover, detalhes
+
+    # Cor de apoio — dourado suave (remete a leitura/conhecimento)
+    ACCENT = "#C99B4B"
+
+    # Fundos
+    BACKGROUND = "#F3F1EA"       # fundo geral das telas — tom "papel", confortável
+    BACKGROUND_ALT = "#EAEEF6"   # fundo alternativo (ex.: tela de leitura, modo claro)
+    SURFACE = "#FFFFFF"          # cards, inputs e superfícies elevadas
+
+    # Textos
+    TEXT_PRIMARY = "#22273A"     # texto principal (navy bem escuro, mais suave que preto puro)
+    TEXT_SECONDARY = "#5B6270"   # texto secundário / legendas
+
+    # Bordas e divisores
+    BORDER = "#D9D4C7"
+
+    # Estados semânticos — MESMA LÓGICA de status já existente no app,
+    # apenas com cores mais suaves e consistentes com a identidade visual.
+    SUCCESS = "#3F9C82"          # disponível / devolvido em dia
+    SUCCESS_LIGHT = "#CFE9DE"
+    WARNING = "#D99A3D"          # emprestado
+    WARNING_LIGHT = "#F5E3C4"
+    DANGER = "#C1524B"           # atrasado
+    DANGER_LIGHT = "#F0D3D1"
+
+
 id_usuario_global = 0
 id_livro_global = 0
 id_emprestimo_global = 0
@@ -48,13 +92,13 @@ def main(page: ft.Page):
                 ),
 
             ],
-            bgcolor=Colors.BLUE_200,
+            bgcolor=BiblioColors.BACKGROUND,
             on_change=lambda e: page.go(
                 ["/primeira_user", "/segunda_user", "/terceira_user"][e.control.selected_index]
             )
         ),
         content=ft.Container(),
-        bgcolor=Colors.BLUE_200,
+        bgcolor=BiblioColors.BACKGROUND,
         height=200,
         expand=True,
     )
@@ -177,29 +221,106 @@ def main(page: ft.Page):
                 if data_devolucao < data_atual:
                     livros_atrasados_ids.append(emprestimo['livro_emprestado_id'])
 
-        # Usando ListView para permitir rolagem
-        lv_livros.controls.append(
-            ft.ListView(
-                controls=[
-                    ft.ListTile(
-                        leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                        title=ft.Text(f'Título - {livro["titulo"]}', color=Colors.WHITE),
-                        subtitle=ft.Text(
-                            'ATRASADO' if livro["id_livro"] in livros_atrasados_ids else
-                            'EMPRESTADO' if livro["id_livro"] in livros_emprestados_ids else
-                            f'ISBN - {livro["ISBN"]}',
-                            color=Colors.WHITE
+        # ====================================================================
+        # CARD DE LIVRO — apenas visual/estrutural.
+        # A mesma lógica de status já existente (livro atrasado / emprestado /
+        # disponível, calculada acima a partir de livros_atrasados_ids e
+        # livros_emprestados_ids) é reaproveitada tal como estava — o que
+        # muda aqui é só a forma como isso é exibido (card em vez de
+        # ListTile simples), com uma "capa" ilustrativa, badge de status e
+        # melhor hierarquia entre título/autor/ISBN.
+        # ====================================================================
+        def _status_livro(livro):
+            """Deriva o status visual do livro a partir das MESMAS listas de
+            IDs já calculadas acima (nenhuma condição nova foi criada)."""
+            if livro["id_livro"] in livros_atrasados_ids:
+                return {
+                    "label": "ATRASADO",
+                    "icon": ft.Icons.WARNING_AMBER_ROUNDED,
+                    "color": BiblioColors.DANGER,
+                    "bg": BiblioColors.DANGER_LIGHT,
+                }
+            if livro["id_livro"] in livros_emprestados_ids:
+                return {
+                    "label": "EMPRESTADO",
+                    "icon": ft.Icons.SCHEDULE_ROUNDED,
+                    "color": BiblioColors.WARNING,
+                    "bg": BiblioColors.WARNING_LIGHT,
+                }
+            return {
+                "label": "DISPONÍVEL",
+                "icon": ft.Icons.CHECK_CIRCLE_ROUNDED,
+                "color": BiblioColors.SUCCESS,
+                "bg": BiblioColors.SUCCESS_LIGHT,
+            }
+
+        def _card_livro(livro):
+            status = _status_livro(livro)
+
+            # "Capa" do livro: o modelo de dados não possui uma imagem de
+            # capa (sem campo de URL/imagem em `livro`), então usamos um
+            # bloco ilustrativo com ícone — mantém a área de destaque visual
+            # pedida sem inventar/alterar dado nenhum.
+            capa = ft.Container(
+                width=56,
+                height=78,
+                bgcolor=BiblioColors.PRIMARY,
+                border_radius=8,
+                alignment=ft.alignment.center,
+                content=ft.Icon(ft.Icons.MENU_BOOK_ROUNDED, color=BiblioColors.SURFACE, size=26),
+            )
+
+            badge = ft.Container(
+                padding=ft.padding.symmetric(horizontal=10, vertical=4),
+                border_radius=20,
+                bgcolor=status["bg"],
+                content=ft.Row(
+                    [
+                        ft.Icon(status["icon"], size=14, color=status["color"]),
+                        ft.Text(status["label"], size=11, weight="bold", color=status["color"]),
+                    ],
+                    spacing=4,
+                    tight=True,
+                ),
+            )
+
+            return ft.Container(
+                padding=14,
+                bgcolor=BiblioColors.SURFACE,
+                border_radius=16,
+                border=ft.border.all(1, BiblioColors.BORDER),
+                shadow=ft.BoxShadow(
+                    blur_radius=10,
+                    spread_radius=0,
+                    color="#14000000",  # sombra suave (preto com baixa opacidade)
+                    offset=ft.Offset(0, 3),
+                ),
+                content=ft.Row(
+                    [
+                        capa,
+                        ft.Column(
+                            [
+                                ft.Text(
+                                    livro["titulo"],
+                                    size=15,
+                                    weight="bold",
+                                    color=BiblioColors.TEXT_PRIMARY,
+                                    max_lines=2,
+                                    overflow=ft.TextOverflow.ELLIPSIS,
+                                ),
+                                ft.Text(
+                                    f'ISBN {livro["ISBN"]}',
+                                    size=12,
+                                    color=BiblioColors.TEXT_SECONDARY,
+                                ),
+                                badge,
+                            ],
+                            spacing=6,
+                            expand=True,
                         ),
-                        bgcolor=(
-                            Colors.RED_500 if livro["id_livro"] in livros_atrasados_ids else
-                            Colors.ORANGE if livro["id_livro"] in livros_emprestados_ids else
-                            Colors.BLUE_900
-                        ),
-                        height=80,  # Definindo uma altura fixa para cada item
-                        trailing=ft.PopupMenuButton(
+                        ft.PopupMenuButton(
                             icon=ft.Icons.MORE_VERT,
-                            icon_color=Colors.BLACK,
-                            bgcolor=Colors.BLUE_700,
+                            icon_color=BiblioColors.TEXT_SECONDARY,
                             items=[
                                 ft.PopupMenuItem(
                                     text='Detalhes',
@@ -212,11 +333,20 @@ def main(page: ft.Page):
                                 # ft.PopupMenuItem(text=f'Leitura',
                                 #                  on_click=lambda _, l=livro: leitura_livro_titulo(l)),
                             ],
-                        )
-                    )
-                    for livro in resultado_lista
+                        ),
+                    ],
+                    spacing=12,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                ),
+            )
 
-                ],
+        # Usando ListView para permitir rolagem — mesma iteração de sempre
+        # sobre `resultado_lista`, só que agora renderizando `_card_livro`.
+        lv_livros.controls.append(
+            ft.ListView(
+                controls=[_card_livro(livro) for livro in resultado_lista],
+                spacing=10,
+                padding=ft.padding.symmetric(vertical=8),
                 expand=True,  # Permite que o ListView ocupe o espaço disponível
             )
         )
@@ -260,21 +390,21 @@ def main(page: ft.Page):
                             ft.Icon(
                                 ft.Icons.MENU_BOOK,
                                 size=60,
-                                color=Colors.BLACK,
+                                color=BiblioColors.TEXT_PRIMARY,
                             ),
                             ft.Text(
                                 "Nenhum livro emprestado no momento",
                                 font_family="Arial",
                                 size=18,
                                 weight="bold",
-                                color=Colors.BLACK
+                                color=BiblioColors.TEXT_PRIMARY
                             ),
                             ft.Text(
                                 "Quando você realizar um empréstimo, ele aparecerá aqui.",
                                 font_family="Arial",
                                 size=14,
                                 weight="bold",
-                                color=Colors.BLACK
+                                color=BiblioColors.TEXT_PRIMARY
                             ),
                         ],
                         alignment=ft.MainAxisAlignment.CENTER,
@@ -293,29 +423,77 @@ def main(page: ft.Page):
 
         lv_livros.controls.clear()
 
-        # 3️⃣ Criar ListView corretamente
-        lv_livros.controls.append(
-            ft.ListView(
-                controls=[
-                    ft.ListTile(
-                        leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                        title=ft.Text(
-                            f'Título - {livro["titulo"]}',
-                            color=Colors.WHITE,
-                            font_family="Arial"
+        # ====================================================================
+        # CARD DE "LIVRO EMPRESTADO" — só visual. Mesmos dados exibidos antes
+        # (título e data de devolução do MESMO `emp`), mesmos 3 itens do menu
+        # com os MESMOS callbacks (exibir_detalhes_livro_user, leitura_livro_titulo,
+        # editar_statuss_emprestimo). O que muda é a apresentação: card com
+        # ícone, badge "EMPRESTADO" e a data de devolução em destaque, para
+        # ficar mais fácil de identificar à primeira vista.
+        # ====================================================================
+        def _card_emprestimo(livro, emp):
+            return ft.Container(
+                padding=14,
+                bgcolor=BiblioColors.SURFACE,
+                border_radius=16,
+                border=ft.border.all(1, BiblioColors.WARNING_LIGHT),
+                shadow=ft.BoxShadow(
+                    blur_radius=10,
+                    spread_radius=0,
+                    color="#14000000",
+                    offset=ft.Offset(0, 3),
+                ),
+                content=ft.Row(
+                    [
+                        ft.Container(
+                            width=48,
+                            height=48,
+                            bgcolor=BiblioColors.WARNING_LIGHT,
+                            border_radius=10,
+                            alignment=ft.alignment.center,
+                            content=ft.Icon(ft.Icons.BOOK_ROUNDED, color=BiblioColors.WARNING, size=24),
                         ),
-                        subtitle=ft.Text(
-                            f'Devoulução - {emp["data_de_devolucao"]}',
-                            color=Colors.WHITE,
-                            font_family="Arial"
+                        ft.Column(
+                            [
+                                ft.Text(
+                                    livro["titulo"],
+                                    size=15,
+                                    weight="bold",
+                                    color=BiblioColors.TEXT_PRIMARY,
+                                    font_family="Arial",
+                                    max_lines=2,
+                                    overflow=ft.TextOverflow.ELLIPSIS,
+                                ),
+                                ft.Row(
+                                    [
+                                        ft.Icon(ft.Icons.EVENT_ROUNDED, size=14, color=BiblioColors.TEXT_SECONDARY),
+                                        ft.Text(
+                                            f'Devolução em {emp["data_de_devolucao"]}',
+                                            size=12,
+                                            color=BiblioColors.TEXT_SECONDARY,
+                                            font_family="Arial",
+                                        ),
+                                    ],
+                                    spacing=4,
+                                ),
+                                ft.Container(
+                                    padding=ft.padding.symmetric(horizontal=10, vertical=3),
+                                    border_radius=20,
+                                    bgcolor=BiblioColors.WARNING_LIGHT,
+                                    content=ft.Text(
+                                        "EMPRESTADO",
+                                        size=11,
+                                        weight="bold",
+                                        color=BiblioColors.WARNING,
+                                    ),
+                                ),
+                            ],
+                            spacing=6,
+                            expand=True,
                         ),
-
-                        bgcolor=Colors.BLUE_900,
-                        height=80,
-                        trailing=ft.PopupMenuButton(
+                        ft.PopupMenuButton(
                             icon=ft.Icons.MORE_VERT,
-                            icon_color=Colors.BLACK,
-                            bgcolor=Colors.BLUE_700,
+                            icon_color=BiblioColors.TEXT_SECONDARY,
                             items=[
                                 ft.PopupMenuItem(
                                     text='Detalhes',
@@ -331,11 +509,23 @@ def main(page: ft.Page):
                                     on_click=lambda _, emp=emp: editar_statuss_emprestimo(e, emp)
                                 ),
                             ],
-                        )
-                    )
+                        ),
+                    ],
+                    spacing=12,
+                    vertical_alignment=ft.CrossAxisAlignment.START,
+                ),
+            )
+
+        # 3️⃣ Criar ListView corretamente — mesma iteração/filtro de sempre.
+        lv_livros.controls.append(
+            ft.ListView(
+                controls=[
+                    _card_emprestimo(livro, emp)
                     for emp in emprestimos_user_ativos
                     if (livro := livros_por_id.get(emp["livro_emprestado_id"])) is not None
                 ],
+                spacing=10,
+                padding=ft.padding.symmetric(vertical=8),
                 expand=True,
             )
         )
@@ -372,10 +562,10 @@ def main(page: ft.Page):
             status = emprestimo.get("status")
 
             if status == "Ativo":
-                card_color = Colors.GREEN
+                card_color = BiblioColors.SUCCESS
 
             elif status == "Devolvido":
-                card_color = Colors.RED_300
+                card_color = BiblioColors.DANGER_LIGHT
 
             # Formatar data
             data_formatada = emprestimo["data_de_emprestimo"]
@@ -402,12 +592,12 @@ def main(page: ft.Page):
                     [
                         ft.Row(
                             [
-                                ft.Icon(ft.Icons.RECEIPT_LONG, size=32, color=Colors.BLACK),
+                                ft.Icon(ft.Icons.RECEIPT_LONG, size=32, color=BiblioColors.TEXT_PRIMARY),
                                 ft.Text(
                                     f"Empréstimo #{emprestimo['id_emprestimo']}",
                                     size=22,
                                     weight="bold",
-                                    color=Colors.BLACK,
+                                    color=BiblioColors.TEXT_PRIMARY,
                                 )
                             ]
                         ),
@@ -416,19 +606,19 @@ def main(page: ft.Page):
 
                             size=17,
                             weight="bold",
-                            color=Colors.BLACK,
+                            color=BiblioColors.TEXT_PRIMARY,
                         ),
 
                         ft.Text(
                             data_formatada,
                             size=16,
-                            color=Colors.BLACK,
+                            color=BiblioColors.TEXT_PRIMARY,
                         ),
 
                         ft.Text(
                             f"Status: {status}",
                             size=18,
-                            color=Colors.BLACK,
+                            color=BiblioColors.TEXT_PRIMARY,
                             weight="bold"
                         ),
 
@@ -482,21 +672,21 @@ def main(page: ft.Page):
                 # Verifica se o livro está emprestado
 
                 if livro_id in livros_emprestados_ids:
-                    bgcolor = Colors.ORANGE  # Cor para livros emprestados
+                    bgcolor = BiblioColors.WARNING  # Cor para livros emprestados
                     subtitle_text = 'EMPRESTADO'
                 else:
-                    bgcolor = Colors.BLUE_900  # Cor para livros disponíveis
+                    bgcolor = BiblioColors.PRIMARY_DARK  # Cor para livros disponíveis
                     subtitle_text = f'ISBN - {isbn_livro}'
 
                 lv_livros.controls.append(
                     ft.ListTile(
-                        leading=ft.Icon(ft.Icons.BOOK, color=Colors.BLACK),
-                        title=ft.Text(f'Título - {titulo_livro}', color=Colors.WHITE),
-                        subtitle=ft.Text(subtitle_text, color=Colors.WHITE),
+                        leading=ft.Icon(ft.Icons.BOOK, color=BiblioColors.TEXT_PRIMARY),
+                        title=ft.Text(f'Título - {titulo_livro}', color=BiblioColors.SURFACE),
+                        subtitle=ft.Text(subtitle_text, color=BiblioColors.SURFACE),
                         bgcolor=bgcolor,
                         trailing=ft.PopupMenuButton(
-                            icon=ft.Icons.MORE_VERT, icon_color=Colors.BLACK,
-                            bgcolor=Colors.BLUE_700,
+                            icon=ft.Icons.MORE_VERT, icon_color=BiblioColors.TEXT_PRIMARY,
+                            bgcolor=BiblioColors.PRIMARY,
                             items=[
                                 ft.PopupMenuItem(text='Detalhes',
                                                  on_click=lambda _, l=livro_filtrado: exibir_detalhes_livro_user(l)),
@@ -510,7 +700,7 @@ def main(page: ft.Page):
             page.update()
 
         input_get_livro = ft.Dropdown(
-            bgcolor=Colors.BLUE_300,
+            bgcolor=BiblioColors.PRIMARY_LIGHT,
             width=page.window.width,
             options=options,
             label='Buscar por ID',
@@ -612,14 +802,14 @@ def main(page: ft.Page):
     dlg_modal = ft.AlertDialog(
         title=ft.Text("ALERTA‼️"),
         content=ft.Text("Você realmente confirma esse cadastro, após cadastrado não terá como editar",
-                        color=Colors.WHITE, font_family='Arial', size=18),
+                        color=BiblioColors.SURFACE, font_family='Arial', size=18),
         actions=[
             ft.TextButton("SIM", on_click=salvar_emprestimos),
             ft.TextButton("NÃO", on_click=lambda e: fechar_dialogo(e)),
         ],
         actions_alignment=ft.MainAxisAlignment.END,
         on_dismiss=lambda e: print("Modal dialog dismissed!"),
-        bgcolor=Colors.BLUE_700,
+        bgcolor=BiblioColors.PRIMARY,
     )
 
     def fechar_dialogo(e):
@@ -635,47 +825,49 @@ def main(page: ft.Page):
         input_cpf_login.value = ""
         input_senha_login.value = ""
         page.views.clear()
+        # ROTA: "/" — Tela de login (admin/usuário). Não alterada na lógica.
         if page.route == "/":
             page.views.append(
                 View(
                     "/",
 
                     [
-                        AppBar(title=Text("Login", size=24), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Login", size=24), bgcolor=BiblioColors.PRIMARY,
                                center_title=True),
                         Column(
                             [
-                                Text("Bem-vindo!", size=30, color=Colors.BLUE_900),
-                                Text("Por favor, faça login para continuar.", size=16, color=Colors.BLUE_700),
+                                Text("Bem-vindo!", size=30, color=BiblioColors.PRIMARY_DARK),
+                                Text("Por favor, faça login para continuar.", size=16, color=BiblioColors.PRIMARY),
                                 input_email_login,
                                 input_senha_login,
                                 ElevatedButton(
                                     "Entrar",
                                     on_click=lambda e: on_login_click(e),
-                                    bgcolor=Colors.BLUE_800,
-                                    color=Colors.WHITE,
+                                    bgcolor=BiblioColors.PRIMARY_DARK,
+                                    color=BiblioColors.SURFACE,
                                 ),
                             ],
                             spacing=20,
                         ),
                         Column(
                             [
-                                Text("Caso não possuir um login, faça o seu cadastro", size=20, color=Colors.BLUE_900),
+                                Text("Caso não possuir um login, faça o seu cadastro", size=20, color=BiblioColors.PRIMARY_DARK),
                                 ElevatedButton(
                                     "Cadastro",
                                     on_click=lambda e: page.go("/cadastro_usuario_login"),
-                                    bgcolor=Colors.BLUE_800,
-                                    color=Colors.WHITE,
+                                    bgcolor=BiblioColors.PRIMARY_DARK,
+                                    color=BiblioColors.SURFACE,
                                 )
                             ],
                             spacing=20,
                         )
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                     padding=20,  # Adiciona padding ao redor da coluna
                 )
             )
 
+        # ROTA: "/cadastro_usuario_login" — Cadastro de novo usuário. Não alterada na lógica.
         if page.route == "/cadastro_usuario_login":
             input_nome.value = ""
             input_email_login.value = ""
@@ -688,7 +880,7 @@ def main(page: ft.Page):
                     (
                     "/cadastro_usuario_login",
                     [
-                        AppBar(title=Text("Cadastro users", font_family="Arial", size=24), bgcolor=Colors.BLUE_ACCENT),
+                        AppBar(title=Text("Cadastro users", font_family="Arial", size=24), bgcolor=BiblioColors.PRIMARY),
 
                         input_nome,
                         input_cpf_cadastro,
@@ -700,27 +892,28 @@ def main(page: ft.Page):
                         ElevatedButton(
                             "Cadastrar",
                             on_click=lambda e: on_cadastro_click(e),
-                            bgcolor=Colors.BLUE_900,
-                            color=Colors.WHITE,
+                            bgcolor=BiblioColors.PRIMARY_DARK,
+                            color=BiblioColors.SURFACE,
                         ),
                         ElevatedButton(
                             "Voltar",
                             on_click=lambda e: page.go("/"),
-                            bgcolor=Colors.BLUE_900,
-                            color=Colors.WHITE,
+                            bgcolor=BiblioColors.PRIMARY_DARK,
+                            color=BiblioColors.SURFACE,
                         ),
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
 
                 )
             )
 
+        # ROTA: "/primeira_user" — Home do usuário logado. Não alterada na lógica.
         if page.route == "/primeira_user":
             page.views.append(
                 View(
                     "/primeira_user",
                     [
-                        AppBar(title=Text("Livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Livros", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True, leading=ft.Icon(), actions=[btn_logout]),
                         Container(
                             Column(
@@ -739,8 +932,8 @@ def main(page: ft.Page):
                                     ft.Button(
                                         width=150,
                                         text='Exibir Livros',
-                                        bgcolor=Colors.BLUE_ACCENT,
-                                        color=Colors.BLACK,
+                                        bgcolor=BiblioColors.PRIMARY,
+                                        color=BiblioColors.TEXT_PRIMARY,
                                         on_click=lambda _: page.go('/exibir_livros_user'),
                                     )
                                 ],
@@ -751,55 +944,58 @@ def main(page: ft.Page):
                         ),
                         pagelet_user,
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/exibir_livros_user" — Lista de livros (cards redesenhados em add_livros_lista). Não alterada na lógica.
         if page.route == '/exibir_livros_user':
             add_livros_lista(e)
             page.views.append(
                 View(
                     '/exibir_livros_user',
                     [
-                        AppBar(title=Text("Livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Livros", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True, actions=[btn_logout_exibir_livros]),
                         ft.Button(
                             text="Buscar Livro",
                             width=350,
                             height=40,
-                            bgcolor=Colors.BLUE_800,
-                            color=Colors.WHITE,
+                            bgcolor=BiblioColors.PRIMARY_DARK,
+                            color=BiblioColors.SURFACE,
                             on_click=lambda _: buscar_livro_id(e),
                         ),
 
                         lv_livros,
 
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/exibir_detalhes_livro_user" — Detalhes de um livro. Não alterada na lógica.
         if page.route == '/exibir_detalhes_livro_user':
             page.views.append(
                 View(
                     'exibir_detalhes_livros_user',
                     [
-                        AppBar(title=Text("Detalhes", font_family="Consolas"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Detalhes", font_family="Consolas"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True, actions=[btn_logout_exibir_detalhes_livros]),
                         txt_resultado_livros_user,
                         # Botão de voltar
                         pagelet_user,
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/segunda_user" — Tela de empréstimos do usuário (lista redesenhada em livros_emprestados). Não alterada na lógica.
         if page.route == "/segunda_user":
             page.views.append(
                 View(
                     "/segunda_user",
                     [
-                        AppBar(title=Text("Empréstimos", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Empréstimos", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True),
                         Container(
                             Column(
@@ -816,8 +1012,8 @@ def main(page: ft.Page):
                                     ft.Button(
                                         width=200,
                                         text="Cadastrar Empréstimos",
-                                        bgcolor=Colors.BLUE_ACCENT,
-                                        color=Colors.BLACK,
+                                        bgcolor=BiblioColors.PRIMARY,
+                                        color=BiblioColors.TEXT_PRIMARY,
                                         on_click=lambda _: page.go('/cadastrar_emprestimos_user'),
                                     ),
 
@@ -828,10 +1024,11 @@ def main(page: ft.Page):
                         ),
                         pagelet_user
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/cadastrar_emprestimos_user" — Cadastro de novo empréstimo. Não alterada na lógica.
         if page.route == "/cadastrar_emprestimos_user":
             page.views.append(
                 View(
@@ -839,7 +1036,7 @@ def main(page: ft.Page):
                     [
                         AppBar(
                             title=Text("Cadastro de Empréstimos"),
-                            bgcolor=Colors.BLUE_ACCENT,
+                            bgcolor=BiblioColors.PRIMARY,
                             center_title=True
                         ),
 
@@ -848,7 +1045,7 @@ def main(page: ft.Page):
                             font_family="Arial",
                             weight="bold",
                             size=18,
-                            color=Colors.BLACK,
+                            color=BiblioColors.TEXT_PRIMARY,
                         ),
 
                         # (Opcional)
@@ -860,11 +1057,25 @@ def main(page: ft.Page):
 
                         pagelet_user
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
         if page.route == "/leitura_livro":
+            # ================================================================
+            # TELA DE LEITURA — paginação ORIGINAL preservada
+            # (dividir_texto_em_paginas / pagina_atual / botões ◀ ▶ / índice
+            # "X de Y"), com a apresentação de cada página adaptada para
+            # mobile: largura responsiva (sem mais width=800 fixo), rolagem
+            # vertical DENTRO da página quando o texto não cabe na tela, e
+            # gesto de swipe horizontal como alternativa aos botões.
+            #
+            # Nada relacionado a dado/rota/autenticação foi tocado: o
+            # conteúdo continua vindo de `txt_resultado_leitura.value`, o
+            # botão de voltar continua indo para "/emprestimos_ativos", e
+            # os controles de fonte/modo escuro têm o mesmo comportamento
+            # de antes.
+            # ================================================================
 
             # ================= CONFIGURAÇÕES =================
             caracteres_por_pagina = 800
@@ -872,7 +1083,7 @@ def main(page: ft.Page):
             tamanho_fonte = 18
             modo_noturno = False
 
-            # ================= FUNÇÕES =================
+            # ================= FUNÇÕES (lógica original, intocada) =================
             def dividir_texto_em_paginas(texto):
                 if not isinstance(texto, str):
                     texto = str(texto)
@@ -896,39 +1107,55 @@ def main(page: ft.Page):
 
                 return paginas
 
-            # ================= CONTEÚDO =================
+            # ================= CONTEÚDO (mesma fonte de dado de sempre) =================
             conteudo = txt_resultado_leitura.value or "Nenhum conteúdo disponível"
             paginas = dividir_texto_em_paginas(conteudo)
 
             if not paginas:
                 paginas = ["Nenhum conteúdo disponível"]
 
-            # ================= TEXTO =================
+            # ================= TEXTO DA PÁGINA ATUAL =================
             txt_display = ft.Text(
                 value="",
                 selectable=True,
                 text_align=ft.TextAlign.JUSTIFY,
                 font_family="Georgia",
                 size=tamanho_fonte,
-                style=ft.TextStyle(height=1.6),
-                no_wrap=False
+                style=ft.TextStyle(height=1.6),  # entrelinha confortável
+                no_wrap=False,  # garante quebra automática de linha (sem vazar largura)
             )
 
-            indicador = ft.Text(size=14)
-            progresso = ft.ProgressBar(value=0)
+            indicador = ft.Text(size=14, weight="bold")
+            progresso = ft.ProgressBar(value=0, color=BiblioColors.PRIMARY, bgcolor=BiblioColors.BORDER)
 
-            # ================= CONTAINERS =================
+            # ================= LARGURA RESPONSIVA =================
+            # Antes era `width=800` fixo (vazava em celular). Agora calcula a
+            # partir da largura real da tela, com teto de conforto em telas
+            # grandes e mínimo de margem em telas pequenas (375/390/414px).
+            def _calcular_largura():
+                largura_tela = page.width or page.window.width or 375
+                return min(max(largura_tela - 32, 280), 680)
+
+            # A página em si: rolagem vertical PRÓPRIA (fica dentro da página,
+            # não substitui a paginação) para o caso do texto não caber
+            # inteiro na altura da tela.
+            pagina_scroll = ft.Column(
+                [txt_display],
+                scroll=ft.ScrollMode.AUTO,
+                expand=True,
+            )
+
             area_leitura = ft.Container(
-                content=txt_display,
-                padding=30,
-                width=800,
-                bgcolor=Colors.WHITE,
-                border_radius=12,
+                content=pagina_scroll,
+                padding=ft.padding.symmetric(horizontal=22, vertical=24),
+                width=_calcular_largura(),
+                bgcolor=BiblioColors.SURFACE,
+                border_radius=16,
                 shadow=ft.BoxShadow(
-                    blur_radius=12,
-                    color=Colors.BLACK12,
-                    offset=ft.Offset(0, 4)
-                )
+                    blur_radius=14,
+                    color="#14000000",  # sombra suave (preto com baixa opacidade)
+                    offset=ft.Offset(0, 4),
+                ),
             )
 
             fundo = ft.Container(expand=True)
@@ -936,22 +1163,32 @@ def main(page: ft.Page):
             # ================= ATUALIZAÇÕES =================
             def atualizar_estilo():
                 txt_display.size = tamanho_fonte
-                txt_display.color = Colors.WHITE if modo_noturno else Colors.BLACK87
-                area_leitura.bgcolor = Colors.BLACK87 if modo_noturno else Colors.WHITE
-                fundo.bgcolor = Colors.BLACK if modo_noturno else Colors.BLUE_GREY_50
+                txt_display.color = BiblioColors.SURFACE if modo_noturno else BiblioColors.TEXT_PRIMARY
+                area_leitura.bgcolor = BiblioColors.PRIMARY_DARK if modo_noturno else BiblioColors.SURFACE
+                indicador.color = BiblioColors.SURFACE if modo_noturno else BiblioColors.TEXT_PRIMARY
+                fundo.bgcolor = BiblioColors.TEXT_PRIMARY if modo_noturno else BiblioColors.BACKGROUND_ALT
 
-            def atualizar_pagina():
+            def atualizar_pagina(rolar_para_topo=True):
                 nonlocal pagina_atual
 
-                # 🔒 GARANTE QUE NÃO ESTOURE ÍNDICE
+                # GARANTE QUE NÃO ESTOURE ÍNDICE (mesma trava de sempre)
                 if pagina_atual < 1:
                     pagina_atual = 1
                 if pagina_atual > len(paginas):
                     pagina_atual = len(paginas)
 
                 txt_display.value = paginas[pagina_atual - 1]
-                indicador.value = f"Página {pagina_atual} de {len(paginas)}"
+                indicador.value = f"{pagina_atual} / {len(paginas)}"
                 progresso.value = pagina_atual / len(paginas)
+
+                # Volta o scroll interno da página para o topo ao trocar de página.
+                # Só faz sentido (e só é seguro) quando o controle já está
+                # anexado à page — ou seja, em trocas de página feitas DEPOIS
+                # da primeira renderização. Na inicialização (rolar_para_topo=False)
+                # o Column já nasce com scroll em 0, então não há necessidade de
+                # chamar scroll_to, que dispara update() num controle ainda órfão.
+                if rolar_para_topo:
+                    pagina_scroll.scroll_to(offset=0, duration=0)
 
                 atualizar_estilo()
                 page.update()
@@ -987,65 +1224,111 @@ def main(page: ft.Page):
                 atualizar_estilo()
                 page.update()
 
-            # ================= LAYOUT =================
+            # Reajusta a largura da página se a janela for redimensionada/
+            # rotacionada, para não vazar em nenhum tamanho de tela.
+            def ao_redimensionar(e):
+                area_leitura.width = _calcular_largura()
+                page.update()
+
+            page.on_resized = ao_redimensionar
+
+            # Swipe horizontal como ALTERNATIVA aos botões ◀ ▶ (que continuam
+            # funcionando normalmente). primary_velocity > 0 = arrasto para a
+            # direita (página anterior); < 0 = arrasto para a esquerda
+            # (próxima página) — mesma convenção de um leitor de e-book.
+            def ao_arrastar(e: ft.DragEndEvent):
+                if e.primary_velocity is None:
+                    return
+                if e.primary_velocity < -200:
+                    proxima(e)
+                elif e.primary_velocity > 200:
+                    anterior(e)
+
+            area_com_gesto = ft.GestureDetector(
+                content=area_leitura,
+                on_horizontal_drag_end=ao_arrastar,
+            )
+
+            # ================= BARRA SUPERIOR =================
+            barra_superior = ft.Row(
+                [
+                    ft.IconButton(
+                        ft.Icons.ARROW_BACK,
+                        icon_color=BiblioColors.TEXT_PRIMARY,
+                        tooltip="Voltar",
+                        on_click=lambda _: page.go("/emprestimos_ativos"),
+                    ),
+                    indicador,
+                    ft.Row(
+                        [
+                            ft.IconButton(ft.Icons.REMOVE, icon_color=BiblioColors.TEXT_PRIMARY,
+                                          tooltip="Diminuir fonte", on_click=diminuir_fonte),
+                            ft.IconButton(ft.Icons.ADD, icon_color=BiblioColors.TEXT_PRIMARY,
+                                          tooltip="Aumentar fonte", on_click=aumentar_fonte),
+                            ft.IconButton(ft.Icons.DARK_MODE, icon_color=BiblioColors.TEXT_PRIMARY,
+                                          tooltip="Alternar modo escuro", on_click=alternar_modo),
+                        ],
+                        spacing=0,
+                    ),
+                ],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            )
+
+            # ================= NAVEGAÇÃO ◀ ▶ (mesma função de sempre) =================
+            navegacao = ft.Row(
+                [
+                    ft.IconButton(ft.Icons.ARROW_BACK_IOS, icon_color=BiblioColors.PRIMARY, on_click=anterior),
+                    ft.IconButton(ft.Icons.ARROW_FORWARD_IOS, icon_color=BiblioColors.PRIMARY, on_click=proxima),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                spacing=40,
+            )
+
+            # ================= LAYOUT (vertical: página ocupa a tela; =====
+            # navegação continua horizontal, entre esquerda/direita) =======
             fundo.content = ft.Column(
                 [
-                    ft.Row(
-                        [
-                            ft.IconButton(
-                                ft.Icons.ARROW_BACK,
-                                tooltip="Voltar",
-                                on_click=lambda _: page.go("/emprestimos_ativos")
-                            ),
-                            indicador,
-                            ft.Row(
-                                [
-                                    ft.IconButton(ft.Icons.REMOVE, on_click=diminuir_fonte),
-                                    ft.IconButton(ft.Icons.ADD, on_click=aumentar_fonte),
-                                    ft.IconButton(ft.Icons.DARK_MODE, on_click=alternar_modo)
-                                ]
-                            )
-                        ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                    ft.Container(
+                        content=barra_superior,
+                        padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                        bgcolor=BiblioColors.SURFACE,
                     ),
-
                     progresso,
-
                     ft.Row(
-                        [area_leitura],
+                        [area_com_gesto],
                         alignment=ft.MainAxisAlignment.CENTER,
-                        expand=True
+                        expand=True,
                     ),
-
-                    ft.Row(
-                        [
-                            ft.IconButton(ft.Icons.ARROW_BACK_IOS, on_click=anterior),
-                            ft.IconButton(ft.Icons.ARROW_FORWARD_IOS, on_click=proxima)
-                        ],
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        spacing=40
-                    )
+                    navegacao,
                 ],
                 expand=True,
-                spacing=20
+                spacing=16,
             )
 
             # ================= INICIALIZA =================
-            atualizar_pagina()
+            # rolar_para_topo=False: nesta primeira chamada, pagina_scroll
+            # ainda não foi anexado à page (isso só acontece quando a View
+            # é montada e page.update() roda de fato), então scroll_to()
+            # aqui quebraria com "Column Control must be added to the page
+            # first". Como o Column já nasce com scroll em 0, não há nada
+            # para rolar mesmo.
+            atualizar_pagina(rolar_para_topo=False)
 
             page.views.append(
                 View(
                     "/leitura_livro",
                     [fundo],
+                    padding=0,
                 )
             )
 
+        # ROTA: "/terceira_user" — Histórico do usuário. Não alterada na lógica.
         if page.route == "/terceira_user":
             page.views.append(
                 View(
                     "/terceira_user",
                     [
-                        AppBar(title=Text("Histórico", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Histórico", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True),
                         Container(
                             Column(
@@ -1062,16 +1345,16 @@ def main(page: ft.Page):
                                     ft.Button(
                                         width=200,
                                         text="Ativos",
-                                        bgcolor=Colors.BLUE_ACCENT,
-                                        color=Colors.BLACK,
+                                        bgcolor=BiblioColors.PRIMARY,
+                                        color=BiblioColors.TEXT_PRIMARY,
                                         on_click=lambda _: page.go('/emprestimos_ativos'),
                                     ),
 
                                     ft.Button(
                                         width=200,
                                         text="Histórico",
-                                        bgcolor=Colors.BLUE_ACCENT,
-                                        color=Colors.BLACK,
+                                        bgcolor=BiblioColors.PRIMARY,
+                                        color=BiblioColors.TEXT_PRIMARY,
                                         on_click=lambda _: page.go('/historico_geral'),
                                     ),
 
@@ -1083,26 +1366,28 @@ def main(page: ft.Page):
 
                         pagelet_user,
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/emprestimos_ativos" — Lista de empréstimos ativos do usuário. Não alterada na lógica.
         if page.route == "/emprestimos_ativos":
             livros_emprestados(e)
             page.views.append(
                 View(
                     "/emprestimos_ativos",
                     [
-                        AppBar(title=Text("Meus livros", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Meus livros", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True, actions=[btn_logout_emprestimos_ativos]),
 
                         lv_livros,
 
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
+        # ROTA: "/historico_geral" — Histórico geral (admin). Não alterada na lógica.
         if page.route == "/historico_geral":
             add_historico_usuario(None)
             page.views.append(
@@ -1110,15 +1395,15 @@ def main(page: ft.Page):
                     "/historico_geral",
                     [
 
-                        AppBar(title=Text("Histórico", font_family="Arial"), bgcolor=Colors.BLUE_ACCENT,
+                        AppBar(title=Text("Histórico", font_family="Arial"), bgcolor=BiblioColors.PRIMARY,
                                center_title=True, actions=[btn_logout_historico_geral]),
-                        ft.Text("Histórico de Empréstimos", font_family="Arial", size=22, color=Colors.BLUE_900,
+                        ft.Text("Histórico de Empréstimos", font_family="Arial", size=22, color=BiblioColors.PRIMARY_DARK,
                                 weight="bold"),
 
                         lv_emprestimos_geral
 
                     ],
-                    bgcolor=Colors.BLUE_200,
+                    bgcolor=BiblioColors.BACKGROUND,
                 )
             )
 
@@ -1134,45 +1419,45 @@ def main(page: ft.Page):
     btn_logout_emprestimos_ativos = ft.TextButton(
         icon=Icons.LOGOUT,
         scale=1.5,
-        icon_color=Colors.BLUE_700,
+        icon_color=BiblioColors.PRIMARY,
         on_click=lambda _: page.go("/terceira_user"),
     )
 
     btn_logout_historico_geral = ft.TextButton(
         icon=Icons.LOGOUT,
         scale=1.5,
-        icon_color=Colors.BLUE_700,
+        icon_color=BiblioColors.PRIMARY,
         on_click=lambda _: page.go("/terceira_user"),
     )
 
     btn_logout_exibir_livros = ft.TextButton(
         icon=Icons.LOGOUT,
         scale=1.5,
-        icon_color=Colors.BLUE_700,
+        icon_color=BiblioColors.PRIMARY,
         on_click=lambda _: page.go("/primeira_user"),
     )
 
     btn_logout_exibir_detalhes_livros = ft.TextButton(
         icon=Icons.LOGOUT,
         scale=1.5,
-        icon_color=Colors.BLUE_700,
+        icon_color=BiblioColors.PRIMARY,
         on_click=lambda _: page.go("/emprestimos_ativos"),
     )
 
     msg_sucesso = ft.SnackBar(
 
         content=ft.Text("campos salvo com sucesso"),
-        bgcolor=Colors.GREEN
+        bgcolor=BiblioColors.SUCCESS
     )
 
     msg_sucesso_status = ft.SnackBar(
         content=ft.Text("Livro devolvido com sucesso"),
-        bgcolor=Colors.GREEN
+        bgcolor=BiblioColors.SUCCESS
     )
 
     msg_error = ft.SnackBar(
         content=ft.Text('campos não podem estar vazios'),
-        bgcolor=Colors.RED
+        bgcolor=BiblioColors.DANGER
     )
 
     imagem = ft.Image(
@@ -1205,16 +1490,16 @@ def main(page: ft.Page):
     )
 
     # LIVROS
-    input_titulo = ft.TextField(label='Titulo', hint_text='insira titulo', col=4, hover_color=Colors.BLUE)
-    input_resumo = ft.TextField(label='Resumo', hint_text='insira o resumo', col=4, hover_color=Colors.BLUE)
-    input_ISBN = ft.TextField(label='ISBN', hint_text='insira o ISBN', col=4, hover_color=Colors.BLUE)
-    input_autor = ft.TextField(label='Autor', hint_text='insira autor', col=4, hover_color=Colors.BLUE)
+    input_titulo = ft.TextField(label='Titulo', hint_text='insira titulo', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_resumo = ft.TextField(label='Resumo', hint_text='insira o resumo', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_ISBN = ft.TextField(label='ISBN', hint_text='insira o ISBN', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_autor = ft.TextField(label='Autor', hint_text='insira autor', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
     input_leitura = ft.TextField(
         label='Leitura',
         hint_text='Insira a leitura',
         width=500,  # Largura aumentada
         # Altura aumentada (em pixels)
-        hover_color=Colors.BLUE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
         cursor_width=5,
         multiline=True  # Permite múltiplas linhas de texto
     )
@@ -1227,31 +1512,31 @@ def main(page: ft.Page):
         auto_scroll=False  # não rola sozinho
     )
 
-    txt_resultado_livros = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
-    txt_resultado_livros_user = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
+    txt_resultado_livros = ft.Text('', font_family="Arial", size=18, color=BiblioColors.TEXT_PRIMARY)
+    txt_resultado_livros_user = ft.Text('', font_family="Arial", size=18, color=BiblioColors.TEXT_PRIMARY)
 
-    txt_resultado_leitura = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
+    txt_resultado_leitura = ft.Text('', font_family="Arial", size=18, color=BiblioColors.TEXT_PRIMARY)
     # USUÁRIOS
-    input_nome = ft.TextField(label='Nome', hint_text='insira nome', col=4, hover_color=Colors.BLUE)
-    input_email = ft.TextField(label="Email", hint_text="insira seu email", col=4, hover_color=Colors.BLUE)
-    input_cpf = ft.TextField(label='Cpf', hint_text='insira cpf', col=4, hover_color=Colors.BLUE)
-    input_endereco = ft.TextField(label='endereço', hint_text='insira o endereço', col=4, hover_color=Colors.BLUE)
+    input_nome = ft.TextField(label='Nome', hint_text='insira nome', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_email = ft.TextField(label="Email", hint_text="insira seu email", col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_cpf = ft.TextField(label='Cpf', hint_text='insira cpf', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
+    input_endereco = ft.TextField(label='endereço', hint_text='insira o endereço', col=4, hover_color=BiblioColors.PRIMARY_LIGHT)
 
     lv_usuarios = ft.ListView(
 
     )
 
-    txt_resultado_usuarios = ft.Text('', font_family="Arial", size=19, color=Colors.BLACK, )
+    txt_resultado_usuarios = ft.Text('', font_family="Arial", size=19, color=BiblioColors.TEXT_PRIMARY, )
 
     # EMPRÉSTIMOS
     txt_data_prevista = ft.Text(
         "Data prevista de devolução: --/--/----",
         size=14,
-        color=Colors.BLACK87
+        color=BiblioColors.TEXT_PRIMARY
     )
 
     input_data_emprestimo = ft.TextField(label='Data de empréstimo', hint_text='insira a data de empréstimo', col=4,
-                                         hover_color=Colors.BLUE)
+                                         hover_color=BiblioColors.PRIMARY_LIGHT)
 
     lv_emprestimos = ft.ListView(
         height=700,
@@ -1278,7 +1563,7 @@ def main(page: ft.Page):
         divider_thickness=0
     )
 
-    txt_resultado_emprestimo = ft.Text('', font_family="Arial", size=18, color=Colors.BLACK)
+    txt_resultado_emprestimo = ft.Text('', font_family="Arial", size=18, color=BiblioColors.TEXT_PRIMARY)
 
     lv_livros.controls.clear()
     resultado_lista = listar_livro()
@@ -1295,12 +1580,12 @@ def main(page: ft.Page):
               [Option(key=None, text="Nenhum livro disponível", disabled=True)]
 
     input_get_livro_emprestimo = ft.Dropdown(
-        bgcolor=Colors.BLUE_200,
+        bgcolor=BiblioColors.BACKGROUND,
         width=page.window.width,
-        fill_color=Colors.RED,
+        fill_color=BiblioColors.DANGER,
         options=options,
         label='Livro empréstimo',
-        color=Colors.BLACK,
+        color=BiblioColors.TEXT_PRIMARY,
         # on_change=on_change_id_livro_filtrar
     )
 
@@ -1317,12 +1602,12 @@ def main(page: ft.Page):
               [Option(key=None, text="Nenhum usuário ativo", disabled=True)]
 
     input_get_usuario_emprestimo = ft.Dropdown(
-        bgcolor=Colors.BLUE_200,
+        bgcolor=BiblioColors.BACKGROUND,
         width=page.window.width,
-        fill_color=Colors.RED,
+        fill_color=BiblioColors.DANGER,
         options=options,
         label='Usuário emprestimo',
-        color=Colors.BLACK,
+        color=BiblioColors.TEXT_PRIMARY,
     )
 
     lv_livros.controls.clear()
@@ -1369,7 +1654,7 @@ def main(page: ft.Page):
     btn_logout = ft.TextButton(
         icon=Icons.LOGOUT,
         scale=1.5,
-        icon_color=Colors.RED_700,
+        icon_color=BiblioColors.DANGER,
         on_click=click_logout
     )
 
@@ -1377,10 +1662,10 @@ def main(page: ft.Page):
         label='CPF',
         hint_text='Insira seu CPF',
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.BLUE_700,
-        focused_border_color=Colors.BLUE_900,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.PRIMARY,
+        focused_border_color=BiblioColors.PRIMARY_DARK,
+        bgcolor=BiblioColors.SURFACE,
 
     )
 
@@ -1388,10 +1673,10 @@ def main(page: ft.Page):
         label="Email",
         hint_text="Insira seu e-mail",
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.BLUE_700,
-        focused_border_color=Colors.BLUE_900,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.PRIMARY,
+        focused_border_color=BiblioColors.PRIMARY_DARK,
+        bgcolor=BiblioColors.SURFACE,
     )
 
     input_senha_login = ft.TextField(
@@ -1399,25 +1684,25 @@ def main(page: ft.Page):
         hint_text='Insira sua senha',
         password=True,
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.BLUE_700,
-        focused_border_color=Colors.BLUE_900,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.PRIMARY,
+        focused_border_color=BiblioColors.PRIMARY_DARK,
+        bgcolor=BiblioColors.SURFACE,
 
     )
 
     # Mensagem de login
-    login_message = ft.Text('', color=Colors.RED_ACCENT_700, size=18, font_family="Arial", bgcolor=Colors.WHITE)
+    login_message = ft.Text('', color=BiblioColors.DANGER, size=18, font_family="Arial", bgcolor=BiblioColors.SURFACE)
 
     # Campos de entrada
     input_nome = ft.TextField(
         label='Nome',
         hint_text='Insira seu nome',
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.GREY_400,
-        focused_border_color=Colors.BLUE,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.BORDER,
+        focused_border_color=BiblioColors.PRIMARY_LIGHT,
+        bgcolor=BiblioColors.SURFACE,
         width=300,
     )
 
@@ -1425,10 +1710,10 @@ def main(page: ft.Page):
         label='CPF',
         hint_text='Insira seu CPF',
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.GREY_400,
-        focused_border_color=Colors.BLUE,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.BORDER,
+        focused_border_color=BiblioColors.PRIMARY_LIGHT,
+        bgcolor=BiblioColors.SURFACE,
         width=300,
 
     )
@@ -1437,10 +1722,10 @@ def main(page: ft.Page):
         label='email',
         hint_text='Insira seu email',
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.GREY_400,
-        focused_border_color=Colors.BLUE,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.BORDER,
+        focused_border_color=BiblioColors.PRIMARY_LIGHT,
+        bgcolor=BiblioColors.SURFACE,
         width=300,
 
     )
@@ -1450,31 +1735,31 @@ def main(page: ft.Page):
         hint_text='Insira sua senha',
         password=True,
         col=4,
-        hover_color=Colors.BLUE,
-        border_color=Colors.GREY_400,
-        focused_border_color=Colors.BLUE,
-        bgcolor=Colors.WHITE,
+        hover_color=BiblioColors.PRIMARY_LIGHT,
+        border_color=BiblioColors.BORDER,
+        focused_border_color=BiblioColors.PRIMARY_LIGHT,
+        bgcolor=BiblioColors.SURFACE,
         width=300,
     )
 
     input_papel = ft.Dropdown(
         label="Papel",
         width=300,
-        fill_color=Colors.RED,
+        fill_color=BiblioColors.DANGER,
         options=[
             Option(key="admin", text="admin"),
             Option(key="usuario", text="usuario")
 
         ],
-        border_color=Colors.GREY_400,
-        focused_border_color=Colors.BLUE,
-        bgcolor=Colors.WHITE,
+        border_color=BiblioColors.BORDER,
+        focused_border_color=BiblioColors.PRIMARY_LIGHT,
+        bgcolor=BiblioColors.SURFACE,
     )
 
     input_status_user = ft.Dropdown(
         label="Status",
         width=300,
-        fill_color=Colors.RED,
+        fill_color=BiblioColors.DANGER,
         options=[
             Option(key="Ativo", text="Ativo"),
             Option(key="Inativo", text="Inativo")
@@ -1484,7 +1769,7 @@ def main(page: ft.Page):
     def snack_sucesso(texto: str):
         page.snack_bar = ft.SnackBar(
             content=ft.Text(texto),
-            bgcolor=Colors.GREEN
+            bgcolor=BiblioColors.SUCCESS
         )
         page.snack_bar.open = True
         page.overlay.append(page.snack_bar)
@@ -1492,7 +1777,7 @@ def main(page: ft.Page):
     def snack_error(texto: str):
         page.snack_bar = ft.SnackBar(
             content=ft.Text(texto),
-            bgcolor=Colors.RED
+            bgcolor=BiblioColors.DANGER
         )
         page.snack_bar.open = True
         page.overlay.append(page.snack_bar)
